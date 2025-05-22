@@ -5,13 +5,13 @@ import { UserRegisterDto } from './dto/user-register.dto';
 
 @Injectable()
 export class AuthService {
-    constructor(private readonly userService: UserService) { }
+  constructor(private readonly userService: UserService) {}
 
-    async login(userLoginDto: UserLoginDto): Promise<string> {
-        return 'token'; // TODO implementar token 
-    }
+  async login(userLoginDto: UserLoginDto): Promise<string> {
+    return 'token'; // TODO implementar token
+  }
 
-    async register(userRegisterDto: UserRegisterDto): Promise<string> {
-        return 'token';
-    }
+  async register(userRegisterDto: UserRegisterDto): Promise<string> {
+    return 'token';
+  }
 }
