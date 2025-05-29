@@ -1,35 +1,42 @@
 import { Injectable } from '@nestjs/common';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
-import { FindUserDto } from './dto/find-user.dto';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UserService {
-  private users = [
+  private users: User[] = [
     {
       userId: 1,
       username: 'john',
-      password: 'changeme',
+      password: '$2a$10$wQwQwQwQwQwQwQwQwQwQwOeQwQwQwQwQwQwQwQwQwQwQwQwQwQwQ', // senha já criptografada
       email: 'john@user.com',
     },
     {
       userId: 2,
       username: 'maria',
-      password: 'guess',
+      password: '$2a$10$wQwQwQwQwQwQwQwQwQwQwOeQwQwQwQwQwQwQwQwQwQwQwQwQwQwQ', // senha já criptografada
       email: 'maria@user.com',
     },
   ];
 
-  async findOne(findUserDto: FindUserDto): Promise<User | undefined> {
-    return this.users.find((user) => user.username === findUserDto.username);
+  async findByUsername(username: string): Promise<User | undefined> {
+    return this.users.find((user) => user.username === username);
+  }
+
+  async findByEmail(email: string): Promise<User | undefined> {
+    return this.users.find((user) => user.email === email);
   }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     const userId = this.users.length + 1;
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
-    const newUser = {
+    const newUser: User = {
       userId,
-      ...createUserDto,
+      username: createUserDto.username,
+      password: hashedPassword,
+      email: createUserDto.email,
     };
 
     this.users.push(newUser);
