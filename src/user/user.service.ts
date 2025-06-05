@@ -1,45 +1,47 @@
 import { Injectable } from '@nestjs/common';
-import { User } from './entities/user.entity';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UserService {
-  private users: User[] = [
-    {
-      userId: 1,
-      username: 'john',
-      password: '$2a$10$wQwQwQwQwQwQwQwQwQwQwOeQwQwQwQwQwQwQwQwQwQwQwQwQwQwQ', // senha já criptografada
-      email: 'john@user.com',
-    },
-    {
-      userId: 2,
-      username: 'maria',
-      password: '$2a$10$wQwQwQwQwQwQwQwQwQwQwOeQwQwQwQwQwQwQwQwQwQwQwQwQwQwQ', // senha já criptografada
-      email: 'maria@user.com',
-    },
-  ];
+  constructor(private prisma: PrismaService) {}
 
-  async findByUsername(username: string): Promise<User | undefined> {
-    return this.users.find((user) => user.username === username);
-  }
+  async create(createUserDto: CreateUserDto) {
+    console.log('📥 Criando usuário com dados:', createUserDto);
 
-  async findByEmail(email: string): Promise<User | undefined> {
-    return this.users.find((user) => user.email === email);
-  }
-
-  async create(createUserDto: CreateUserDto): Promise<User> {
-    const userId = this.users.length + 1;
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    console.log('🔐 Senha hasheada:', hashedPassword);
 
-    const newUser: User = {
-      userId,
-      username: createUserDto.username,
-      password: hashedPassword,
-      email: createUserDto.email,
-    };
+    const newUser = await this.prisma.user.create({
+      data: {
+        username: createUserDto.username,
+        email: createUserDto.email,
+        password: hashedPassword,
+      },
+    });
 
-    this.users.push(newUser);
+    console.log('✅ Usuário criado:', {
+      id: newUser.id,
+      username: newUser.username,
+      email: newUser.email,
+    });
+
     return newUser;
+  }
+
+  async findByUsername(username: string) {
+    console.log(`🔍 Buscando usuário com username: ${username}`);
+    const user = await this.prisma.user.findUnique({
+      where: { username },
+    });
+
+    if (user) {
+      console.log('✅ Usuário encontrado:', user.username);
+    } else {
+      console.log('❌ Usuário não encontrado');
+    }
+
+    return user;
   }
 }
