@@ -20,7 +20,6 @@ export class AuthService {
       throw new ConflictException('Nome de usuário já está em uso');
     }
 
-    // Removido o hash aqui, pois já está sendo feito no UserService
     return this.userService.create(createUserDto);
   }
 
@@ -30,9 +29,6 @@ export class AuthService {
       throw new UnauthorizedException('Usuário não encontrado');
     }
 
-    console.log('🔐 Senha fornecida:', loginDto.password);
-    console.log('🔐 Senha armazenada:', user.password);
-
     const isPasswordValid = await bcrypt.compare(
       loginDto.password,
       user.password,
@@ -40,7 +36,6 @@ export class AuthService {
     if (!isPasswordValid) {
       throw new UnauthorizedException('Senha incorreta');
     }
-    console.log('🔐 Senha válida?', isPasswordValid);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...result } = user;
     return result;
