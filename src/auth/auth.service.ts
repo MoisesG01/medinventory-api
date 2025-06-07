@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   ConflictException,
 } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
 import { UserLoginDto } from './dto/user-login.dto';
 import { CreateUserDto } from '../user/dto/create-user.dto';
@@ -10,7 +11,10 @@ import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class AuthService {
-  constructor(private userService: UserService) {}
+  constructor(
+    private userService: UserService,
+    private jwtService: JwtService,
+  ) {}
 
   async register(createUserDto: CreateUserDto) {
     const existingUser = await this.userService.findByUsername(
@@ -20,7 +24,24 @@ export class AuthService {
       throw new ConflictException('Nome de usuário já está em uso');
     }
 
-    return this.userService.create(createUserDto);
+    const existingEmail = await this.userService.findByEmail(
+      createUserDto.email,
+    );
+    if (existingEmail) {
+      throw new ConflictException('Email já está em uso');
+    }
+
+    const user = await this.userService.create(createUserDto);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...result } = user;
+
+    const payload = { username: user.username, sub: user.id };
+    const access_token = this.jwtService.sign(payload);
+
+    return {
+      user: result,
+      access_token,
+    };
   }
 
   async validateUser(loginDto: UserLoginDto) {
@@ -36,8 +57,17 @@ export class AuthService {
     if (!isPasswordValid) {
       throw new UnauthorizedException('Senha incorreta');
     }
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...result } = user;
     return result;
+  }
+
+  async login(user: any) {
+    const payload = { username: user.username, sub: user.id };
+    return {
+      user,
+      access_token: this.jwtService.sign(payload),
+    };
   }
 }
