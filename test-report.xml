@@ -1,94 +1,94 @@
 <testExecutions version="1">
+<file path="app.controller.spec.ts">
+<testCase name="AppController root should be defined" duration="55" />
+</file>
 <file path="prisma\prisma.module.spec.ts">
-<testCase name="PrismaModule should be defined" duration="54" />
-<testCase name="PrismaModule should provide PrismaService" duration="11" />
+<testCase name="PrismaModule should be defined" duration="76" />
+<testCase name="PrismaModule should provide PrismaService" duration="13" />
 </file>
 <file path="user\user.service.spec.ts">
-<testCase name="UserService should be defined" duration="38" />
-<testCase name="UserService create should create a new user with hashed password" duration="9" />
-<testCase name="UserService create should throw an error if user creation fails" duration="26" />
-<testCase name="UserService create should throw an error if password hashing fails" duration="5" />
-<testCase name="UserService findByUsername should return user when found by username" duration="5" />
+<testCase name="UserService should be defined" duration="49" />
+<testCase name="UserService create should create a new user with hashed password" duration="11" />
+<testCase name="UserService create should throw an error if user creation fails" duration="42" />
+<testCase name="UserService create should throw an error if password hashing fails" duration="6" />
+<testCase name="UserService findByUsername should return user when found by username" duration="7" />
 <testCase name="UserService findByUsername should return null when user not found by username" duration="4" />
-<testCase name="UserService findByUsername should throw an error if database query fails" duration="3" />
-<testCase name="UserService findByEmail should return user when found by email" duration="4" />
-<testCase name="UserService findByEmail should return null when user not found by email" duration="5" />
-<testCase name="UserService findByEmail should throw an error if database query fails" duration="8" />
-<testCase name="UserService findById should return user when found by id" duration="4" />
-<testCase name="UserService findById should return null when user not found by id" duration="2" />
-<testCase name="UserService findById should throw an error if database query fails" duration="3" />
-</file>
-<file path="app.controller.spec.ts">
-<testCase name="AppController root should be defined" duration="52" />
-</file>
-<file path="auth\strategies\jwt.strategy.spec.ts">
-<testCase name="JwtStrategy validate should return user data without password when user exists" duration="50" />
-<testCase name="JwtStrategy validate should return null when user does not exist" duration="5" />
-<testCase name="JwtStrategy validate should handle errors from userService" duration="29" />
-</file>
-<file path="user\user.module.spec.ts">
-<testCase name="UserModule should be defined" duration="46" />
-<testCase name="UserModule should provide UserService" duration="15" />
+<testCase name="UserService findByUsername should throw an error if database query fails" duration="8" />
+<testCase name="UserService findByEmail should return user when found by email" duration="6" />
+<testCase name="UserService findByEmail should return null when user not found by email" duration="6" />
+<testCase name="UserService findByEmail should throw an error if database query fails" duration="5" />
+<testCase name="UserService findById should return user when found by id" duration="9" />
+<testCase name="UserService findById should return null when user not found by id" duration="3" />
+<testCase name="UserService findById should throw an error if database query fails" duration="6" />
 </file>
 <file path="auth\auth.controller.spec.ts">
-<testCase name="AuthController register should register a new user" duration="53" />
-<testCase name="AuthController register should throw error if registration fails" duration="36" />
-<testCase name="AuthController login should login user and return JWT token" duration="7" />
-<testCase name="AuthController login should throw error if login fails" duration="7" />
-<testCase name="AuthController getProfile should return user profile" duration="7" />
+<testCase name="AuthController register should register a new user" duration="88" />
+<testCase name="AuthController register should throw error if registration fails" duration="32" />
+<testCase name="AuthController login should login user and return JWT token" duration="9" />
+<testCase name="AuthController login should throw error if login fails" duration="10" />
+<testCase name="AuthController getProfile should return user profile" duration="9" />
 <testCase name="AuthController verifyToken should verify token and return user data" duration="4" />
 </file>
-<file path="user\user.controller.spec.ts">
-<testCase name="UserController getMyProfile should return user profile without password if user exists" duration="18" />
-<testCase name="UserController getMyProfile should return message if user not found" duration="4" />
-<testCase name="UserController getProtectedData should return protected data with user and timestamp" duration="6" />
+<file path="auth\strategies\jwt.strategy.spec.ts">
+<testCase name="JwtStrategy validate should return user data without password when user exists" duration="69" />
+<testCase name="JwtStrategy validate should return null when user does not exist" duration="7" />
+<testCase name="JwtStrategy validate should handle errors from userService" duration="21" />
 </file>
 <file path="auth\auth.service.spec.ts">
-<testCase name="AuthService register should successfully register a new user" duration="42" />
-<testCase name="AuthService register should throw ConflictException when username already exists" duration="40" />
-<testCase name="AuthService register should throw ConflictException when email already exists" duration="23" />
+<testCase name="AuthService register should successfully register a new user" duration="56" />
+<testCase name="AuthService register should throw ConflictException when username already exists" duration="59" />
+<testCase name="AuthService register should throw ConflictException when email already exists" duration="7" />
 <testCase name="AuthService register should handle errors during user creation" duration="9" />
 <testCase name="AuthService register should handle errors during JWT signing" duration="8" />
 <testCase name="AuthService register should handle errors during username check" duration="5" />
-<testCase name="AuthService register should handle errors during email check" duration="5" />
-<testCase name="AuthService validateUser should successfully validate user with correct credentials" duration="5" />
-<testCase name="AuthService validateUser should throw UnauthorizedException when user does not exist" duration="5" />
+<testCase name="AuthService register should handle errors during email check" duration="4" />
+<testCase name="AuthService validateUser should successfully validate user with correct credentials" duration="21" />
+<testCase name="AuthService validateUser should throw UnauthorizedException when user does not exist" duration="6" />
 <testCase name="AuthService validateUser should throw UnauthorizedException when password is incorrect" duration="4" />
-<testCase name="AuthService validateUser should handle errors during user lookup" duration="3" />
-<testCase name="AuthService validateUser should handle errors during password comparison" duration="6" />
-<testCase name="AuthService validateUser should validate user with empty password field" duration="6" />
-<testCase name="AuthService login should successfully generate login response" duration="3" />
-<testCase name="AuthService login should handle errors during JWT signing in login" duration="4" />
-<testCase name="AuthService login should work with user object containing extra properties" duration="1" />
-<testCase name="AuthService login should handle user with null or undefined properties" duration="2" />
-<testCase name="AuthService login should handle minimal user object" duration="2" />
-<testCase name="AuthService service initialization should be defined" duration="1" />
-<testCase name="AuthService service initialization should have userService dependency" duration="1" />
-<testCase name="AuthService service initialization should have jwtService dependency" duration="1" />
+<testCase name="AuthService validateUser should handle errors during user lookup" duration="5" />
+<testCase name="AuthService validateUser should handle errors during password comparison" duration="4" />
+<testCase name="AuthService validateUser should validate user with empty password field" duration="3" />
+<testCase name="AuthService login should successfully generate login response" duration="2" />
+<testCase name="AuthService login should handle errors during JWT signing in login" duration="8" />
+<testCase name="AuthService login should work with user object containing extra properties" duration="6" />
+<testCase name="AuthService login should handle user with null or undefined properties" duration="4" />
+<testCase name="AuthService login should handle minimal user object" duration="4" />
+<testCase name="AuthService service initialization should be defined" duration="3" />
+<testCase name="AuthService service initialization should have userService dependency" duration="8" />
+<testCase name="AuthService service initialization should have jwtService dependency" duration="3" />
 </file>
 <file path="prisma\prisma.service.spec.ts">
-<testCase name="PrismaService should be defined" duration="13" />
-<testCase name="PrismaService should have &#x24;connect and &#x24;disconnect methods" duration="5" />
-<testCase name="PrismaService should call &#x24;connect on onModuleInit" duration="6" />
+<testCase name="PrismaService should be defined" duration="18" />
+<testCase name="PrismaService should have &#x24;connect and &#x24;disconnect methods" duration="6" />
+<testCase name="PrismaService should call &#x24;connect on onModuleInit" duration="11" />
 <testCase name="PrismaService should call &#x24;disconnect on onModuleDestroy" duration="4" />
 </file>
 <file path="auth\auth.module.spec.ts">
-<testCase name="AuthModule Module Configuration should be defined" duration="71" />
-<testCase name="AuthModule Module Configuration should have AuthController" duration="15" />
-<testCase name="AuthModule Module Configuration should have AuthService" duration="13" />
-<testCase name="AuthModule Module Configuration should have JwtService" duration="15" />
-<testCase name="AuthModule Module Configuration should have JwtStrategy" duration="5" />
-<testCase name="AuthModule Module Configuration should have JwtAuthGuard" duration="6" />
-<testCase name="AuthModule Module Configuration should have ConfigService" duration="6" />
+<testCase name="AuthModule Module Configuration should be defined" duration="69" />
+<testCase name="AuthModule Module Configuration should have AuthController" duration="18" />
+<testCase name="AuthModule Module Configuration should have AuthService" duration="10" />
+<testCase name="AuthModule Module Configuration should have JwtService" duration="17" />
+<testCase name="AuthModule Module Configuration should have JwtStrategy" duration="8" />
+<testCase name="AuthModule Module Configuration should have JwtAuthGuard" duration="9" />
+<testCase name="AuthModule Module Configuration should have ConfigService" duration="7" />
 <testCase name="AuthModule JWT Configuration should configure JWT with correct secret from ConfigService" duration="10" />
-<testCase name="AuthModule JWT Configuration should configure JWT with correct expiration from ConfigService" duration="9" />
-<testCase name="AuthModule JWT Configuration should use default expiration when not provided" duration="14" />
+<testCase name="AuthModule JWT Configuration should configure JWT with correct expiration from ConfigService" duration="12" />
+<testCase name="AuthModule JWT Configuration should use default expiration when not provided" duration="15" />
 <testCase name="AuthModule Module Dependencies should configure JwtModule with async registration" duration="6" />
-<testCase name="AuthModule Module Dependencies should have PassportModule configured" duration="5" />
-<testCase name="AuthModule Exports should export AuthService" duration="5" />
-<testCase name="AuthModule Exports should export JwtAuthGuard" duration="3" />
-<testCase name="AuthModule Integration Tests should create module with all dependencies resolved" duration="9" />
-<testCase name="AuthModule Integration Tests should handle missing JWT_SECRET gracefully" duration="6" />
-<testCase name="AuthModule Error Handling should handle ConfigService errors gracefully" duration="6" />
+<testCase name="AuthModule Module Dependencies should have PassportModule configured" duration="6" />
+<testCase name="AuthModule Exports should export AuthService" duration="8" />
+<testCase name="AuthModule Exports should export JwtAuthGuard" duration="10" />
+<testCase name="AuthModule Integration Tests should create module with all dependencies resolved" duration="17" />
+<testCase name="AuthModule Integration Tests should handle missing JWT_SECRET gracefully" duration="15" />
+<testCase name="AuthModule Error Handling should handle ConfigService errors gracefully" duration="18" />
+</file>
+<file path="user\user.module.spec.ts">
+<testCase name="UserModule should be defined" duration="16" />
+<testCase name="UserModule should provide UserService" duration="6" />
+</file>
+<file path="user\user.controller.spec.ts">
+<testCase name="UserController getMyProfile should return user profile without password if user exists" duration="9" />
+<testCase name="UserController getMyProfile should return message if user not found" duration="5" />
+<testCase name="UserController getProtectedData should return protected data with user and timestamp" duration="6" />
 </file>
 </testExecutions>
