@@ -12,6 +12,8 @@ describe('JwtStrategy', () => {
     username: 'testuser',
     email: 'test@example.com',
     password: 'hashedPassword',
+    createdAt: new Date('2024-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2024-01-01T00:00:00.000Z'),
   };
 
   const mockPayload = {
@@ -68,6 +70,8 @@ describe('JwtStrategy', () => {
         id: mockUser.id,
         username: mockUser.username,
         email: mockUser.email,
+        createdAt: mockUser.createdAt,
+        updatedAt: mockUser.updatedAt,
       });
       expect(result).not.toHaveProperty('password');
     });
