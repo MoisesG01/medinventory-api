@@ -1,5 +1,3 @@
-export class UserRegisterDto {
-  public username: string;
-  public password: string;
-  public email: string;
-}
+import { BaseUserDto } from '../../common/dto/base-user.dto';
+
+export class UserRegisterDto extends BaseUserDto {}

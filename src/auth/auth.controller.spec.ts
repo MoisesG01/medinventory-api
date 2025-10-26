@@ -13,6 +13,8 @@ describe('AuthController', () => {
     id: 1,
     username: 'testuser',
     email: 'test@example.com',
+    createdAt: new Date('2024-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2024-01-01T00:00:00.000Z'),
   };
 
   const mockAuthResult = {

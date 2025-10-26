@@ -1,9 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, MinLength, MaxLength } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsEmail,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
 
-export class UserLoginDto {
+export class BaseUserDto {
   @ApiProperty({
-    description: 'Nome de usuário para login',
+    description: 'Nome de usuário único',
     example: 'usuario123',
     minLength: 3,
     maxLength: 50,
@@ -13,6 +19,15 @@ export class UserLoginDto {
   @MinLength(3, { message: 'Username deve ter pelo menos 3 caracteres' })
   @MaxLength(50, { message: 'Username deve ter no máximo 50 caracteres' })
   public username: string;
+
+  @ApiProperty({
+    description: 'Email único do usuário',
+    example: 'usuario@exemplo.com',
+    format: 'email',
+  })
+  @IsEmail({}, { message: 'Email deve ter um formato válido' })
+  @IsNotEmpty({ message: 'Email é obrigatório' })
+  public email: string;
 
   @ApiProperty({
     description: 'Senha do usuário',
