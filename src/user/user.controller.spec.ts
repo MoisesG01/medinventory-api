@@ -46,7 +46,11 @@ describe('UserController', () => {
       mockUserService.findById.mockResolvedValue(null);
       const req = { user: { id: 2 } };
       const result = await controller.getMyProfile(req);
-      expect(result).toEqual({ message: 'User not found' });
+      expect(result).toEqual({
+        message: 'Usuário não encontrado',
+        error: 'Not Found',
+        statusCode: 404,
+      });
       expect(mockUserService.findById).toHaveBeenCalledWith(2);
     });
   });

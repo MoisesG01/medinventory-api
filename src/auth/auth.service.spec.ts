@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 import { UserService } from '../user/user.service';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { UserLoginDto } from './dto/user-login.dto';
+import { UserType } from '../common/enums/user-type.enum';
 import * as bcrypt from 'bcryptjs';
 
 // Mock do bcrypt
@@ -18,26 +19,32 @@ describe('AuthService', () => {
   let jwtService: jest.Mocked<JwtService>;
 
   const mockUser = {
-    id: 1,
+    id: '123e4567-e89b-12d3-a456-426614174000',
+    nome: 'Test User',
     username: 'testuser',
     email: 'test@example.com',
     password: 'hashedPassword',
+    tipo: UserType.UsuarioComum,
     createdAt: new Date('2024-01-01T00:00:00.000Z'),
     updatedAt: new Date('2024-01-01T00:00:00.000Z'),
   };
 
   const mockUserWithoutPassword = {
-    id: 1,
+    id: '123e4567-e89b-12d3-a456-426614174000',
+    nome: 'Test User',
     username: 'testuser',
     email: 'test@example.com',
+    tipo: UserType.UsuarioComum,
     createdAt: new Date('2024-01-01T00:00:00.000Z'),
     updatedAt: new Date('2024-01-01T00:00:00.000Z'),
   };
 
   const mockCreateUserDto: CreateUserDto = {
+    nome: 'Test User',
     username: 'testuser',
     email: 'test@example.com',
     password: 'plainPassword',
+    tipo: UserType.UsuarioComum,
   };
 
   const mockLoginDto: UserLoginDto = {
@@ -87,7 +94,7 @@ describe('AuthService', () => {
     it('should successfully register a new user', async () => {
       userService.findByUsername.mockResolvedValue(null);
       userService.findByEmail.mockResolvedValue(null);
-      userService.create.mockResolvedValue(mockUser);
+      userService.create.mockResolvedValue(mockUserWithoutPassword);
       jwtService.sign.mockReturnValue(mockAccessToken);
 
       const result = await authService.register(mockCreateUserDto);

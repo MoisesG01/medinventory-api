@@ -2,23 +2,26 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
 import { UserService } from '../../user/user.service'; // Caminho corrigido
+import { UserType } from '../../common/enums/user-type.enum';
 
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;
   let userService: jest.Mocked<UserService>;
 
   const mockUser = {
-    id: 1,
+    id: '123e4567-e89b-12d3-a456-426614174000',
+    nome: 'Test User',
     username: 'testuser',
     email: 'test@example.com',
     password: 'hashedPassword',
+    tipo: UserType.UsuarioComum,
     createdAt: new Date('2024-01-01T00:00:00.000Z'),
     updatedAt: new Date('2024-01-01T00:00:00.000Z'),
   };
 
   const mockPayload = {
     username: 'testuser',
-    sub: 1,
+    sub: '123e4567-e89b-12d3-a456-426614174000',
   };
 
   beforeEach(async () => {
@@ -68,8 +71,10 @@ describe('JwtStrategy', () => {
       );
       expect(result).toEqual({
         id: mockUser.id,
+        nome: mockUser.nome,
         username: mockUser.username,
         email: mockUser.email,
+        tipo: mockUser.tipo,
         createdAt: mockUser.createdAt,
         updatedAt: mockUser.updatedAt,
       });
