@@ -26,6 +26,8 @@ export class UserController {
   constructor(private userService: UserService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Criar novo usuário' })
   @ApiResponse({
     status: 201,
@@ -40,22 +42,34 @@ export class UserController {
     status: 400,
     description: 'Dados inválidos',
   })
+  @ApiResponse({
+    status: 401,
+    description: 'Token JWT inválido ou expirado',
+  })
   async create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Listar todos os usuários' })
   @ApiResponse({
     status: 200,
     description: 'Lista de usuários retornada com sucesso',
     type: [UserResponseDto],
   })
+  @ApiResponse({
+    status: 401,
+    description: 'Token JWT inválido ou expirado',
+  })
   async findAll() {
     return this.userService.findAll();
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Buscar usuário por ID (UUID)' })
   @ApiParam({
     name: 'id',
@@ -72,11 +86,17 @@ export class UserController {
     status: 404,
     description: 'Usuário não encontrado',
   })
+  @ApiResponse({
+    status: 401,
+    description: 'Token JWT inválido ou expirado',
+  })
   async findOne(@Param('id') id: string) {
     return this.userService.findOne(id);
   }
 
   @Put(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Atualizar usuário' })
   @ApiParam({
     name: 'id',
@@ -101,11 +121,17 @@ export class UserController {
     status: 400,
     description: 'Dados inválidos',
   })
+  @ApiResponse({
+    status: 401,
+    description: 'Token JWT inválido ou expirado',
+  })
   async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.userService.update(id, updateUserDto);
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Remover usuário' })
   @ApiParam({
     name: 'id',
@@ -126,6 +152,10 @@ export class UserController {
   @ApiResponse({
     status: 404,
     description: 'Usuário não encontrado',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Token JWT inválido ou expirado',
   })
   async remove(@Param('id') id: string) {
     return this.userService.remove(id);
