@@ -5,9 +5,24 @@ import {
   IsEmail,
   MinLength,
   MaxLength,
+  IsEnum,
+  IsOptional,
 } from 'class-validator';
+import { UserType } from '../enums/user-type.enum';
 
 export class BaseUserDto {
+  @ApiProperty({
+    description: 'Nome completo do usuário',
+    example: 'João Silva',
+    minLength: 2,
+    maxLength: 100,
+  })
+  @IsString({ message: 'Nome deve ser uma string' })
+  @IsNotEmpty({ message: 'Nome é obrigatório' })
+  @MinLength(2, { message: 'Nome deve ter pelo menos 2 caracteres' })
+  @MaxLength(100, { message: 'Nome deve ter no máximo 100 caracteres' })
+  public nome: string;
+
   @ApiProperty({
     description: 'Nome de usuário único',
     example: 'usuario123',
@@ -40,4 +55,14 @@ export class BaseUserDto {
   @MinLength(6, { message: 'Password deve ter pelo menos 6 caracteres' })
   @MaxLength(100, { message: 'Password deve ter no máximo 100 caracteres' })
   public password: string;
+
+  @ApiProperty({
+    description: 'Tipo do usuário',
+    enum: UserType,
+    example: UserType.UsuarioComum,
+    required: false,
+  })
+  @IsEnum(UserType, { message: 'Tipo deve ser um valor válido' })
+  @IsOptional()
+  public tipo?: UserType;
 }

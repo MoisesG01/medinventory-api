@@ -7,11 +7,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserType {
+  Administrador
+  Gestor
+  Tecnico
+  UsuarioComum
+}
+
 model User {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(uuid())
   username  String   @unique
   password  String
   email     String   @unique
+  nome      String
+  tipo      UserType @default(UsuarioComum)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

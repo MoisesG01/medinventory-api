@@ -32,14 +32,12 @@ export class AuthService {
     }
 
     const user = await this.userService.create(createUserDto);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...result } = user;
 
     const payload = { username: user.username, sub: user.id };
     const access_token = this.jwtService.sign(payload);
 
     return {
-      user: result,
+      user,
       access_token,
     };
   }

@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `user` ALTER COLUMN `nome` DROP DEFAULT;

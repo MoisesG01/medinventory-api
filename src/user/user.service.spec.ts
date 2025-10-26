@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UserService } from './user.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UserType } from '../common/enums/user-type.enum';
 import * as bcrypt from 'bcryptjs';
 
 // Mock do bcrypt
@@ -22,18 +23,21 @@ describe('UserService', () => {
   let prismaService: MockPrismaService;
 
   const mockUser = {
-    id: 1,
+    id: '123e4567-e89b-12d3-a456-426614174000',
+    nome: 'Test User',
     username: 'testuser',
     email: 'test@example.com',
-    password: 'hashedPassword',
+    tipo: UserType.UsuarioComum,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
   const mockCreateUserDto: CreateUserDto = {
+    nome: 'Test User',
     username: 'testuser',
     email: 'test@example.com',
     password: 'plainPassword',
+    tipo: UserType.UsuarioComum,
   };
 
   beforeEach(async () => {
@@ -79,9 +83,11 @@ describe('UserService', () => {
       expect(bcrypt.hash).toHaveBeenCalledWith(mockCreateUserDto.password, 10);
       expect(prismaService.user.create).toHaveBeenCalledWith({
         data: {
+          nome: mockCreateUserDto.nome,
           username: mockCreateUserDto.username,
           email: mockCreateUserDto.email,
           password: hashedPassword,
+          tipo: mockCreateUserDto.tipo,
         },
       });
       expect(result).toEqual(mockUser);
@@ -181,10 +187,10 @@ describe('UserService', () => {
     it('should return user when found by id', async () => {
       prismaService.user.findUnique.mockResolvedValue(mockUser);
 
-      const result = await service.findById(1);
+      const result = await service.findById('123e4567-e89b-12d3-a456-426614174000');
 
       expect(prismaService.user.findUnique).toHaveBeenCalledWith({
-        where: { id: 1 },
+        where: { id: '123e4567-e89b-12d3-a456-426614174000' },
       });
       expect(result).toEqual(mockUser);
     });
@@ -192,10 +198,10 @@ describe('UserService', () => {
     it('should return null when user not found by id', async () => {
       prismaService.user.findUnique.mockResolvedValue(null);
 
-      const result = await service.findById(999);
+      const result = await service.findById('999e4567-e89b-12d3-a456-426614174999');
 
       expect(prismaService.user.findUnique).toHaveBeenCalledWith({
-        where: { id: 999 },
+        where: { id: '999e4567-e89b-12d3-a456-426614174999' },
       });
       expect(result).toBeNull();
     });
@@ -205,7 +211,7 @@ describe('UserService', () => {
         new Error('Database error'),
       );
 
-      await expect(service.findById(1)).rejects.toThrow('Database error');
+      await expect(service.findById('123e4567-e89b-12d3-a456-426614174000')).rejects.toThrow('Database error');
     });
   });
 });

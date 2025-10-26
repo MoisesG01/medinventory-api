@@ -4,15 +4,18 @@ import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { UserLoginDto } from './dto/user-login.dto';
+import { UserType } from '../common/enums/user-type.enum';
 
 describe('AuthController', () => {
   let controller: AuthController;
   let authService: jest.Mocked<AuthService>;
 
   const mockUser = {
-    id: 1,
+    id: '123e4567-e89b-12d3-a456-426614174000',
+    nome: 'Test User',
     username: 'testuser',
     email: 'test@example.com',
+    tipo: UserType.UsuarioComum,
     createdAt: new Date('2024-01-01T00:00:00.000Z'),
     updatedAt: new Date('2024-01-01T00:00:00.000Z'),
   };
@@ -23,9 +26,11 @@ describe('AuthController', () => {
   };
 
   const mockCreateUserDto: CreateUserDto = {
+    nome: 'Test User',
     username: 'testuser',
     email: 'test@example.com',
     password: 'password123',
+    tipo: UserType.UsuarioComum,
   };
 
   const mockLoginDto: UserLoginDto = {
