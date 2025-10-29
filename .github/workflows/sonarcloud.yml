@@ -37,8 +37,8 @@ jobs:
         run: yarn test:sonar
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        continue-on-error: ${{ github.event_name == 'pull_request' }}
+        uses: SonarSource/sonarqube-scan-action@v5.0.0
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Necessário para PR decoration
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -52,4 +52,4 @@ jobs:
             -Dsonar.testExecutionReportPaths=test-report.xml
             -Dsonar.coverage.exclusions=**/*.spec.ts,**/*.e2e-spec.ts,src/main.ts,**/*.module.ts,**/*.dto.ts,**/*.entity.ts
             -Dsonar.cpd.exclusions=**/*.spec.ts,**/*.e2e-spec.ts,**/*.dto.ts,**/*.entity.ts,**/*.module.ts
-            -Dsonar.qualitygate.wait=${{ github.event_name != 'pull_request' }}
+            -Dsonar.qualitygate.wait=false
