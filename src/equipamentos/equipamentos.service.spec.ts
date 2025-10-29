@@ -543,4 +543,179 @@ describe('EquipamentosService', () => {
       );
     });
   });
+
+  describe('findAll - additional filter tests', () => {
+    it('should filter equipamentos by tipo', async () => {
+      const filters: FilterEquipamentoDto = {
+        tipo: 'Monitor de Sinais Vitais',
+        page: 1,
+        limit: 10,
+      };
+
+      mockPrismaService.equipamento.findMany.mockResolvedValue([
+        mockEquipamento,
+      ]);
+      mockPrismaService.equipamento.count.mockResolvedValue(1);
+
+      const result = await service.findAll(filters);
+
+      expect(mockPrismaService.equipamento.findMany).toHaveBeenCalledWith({
+        where: {
+          tipo: {
+            contains: 'Monitor de Sinais Vitais',
+          },
+        },
+        skip: 0,
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              nome: true,
+              username: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      expect(result.data).toHaveLength(1);
+    });
+
+    it('should filter equipamentos by setorAtual', async () => {
+      const filters: FilterEquipamentoDto = {
+        setorAtual: 'UTI',
+        page: 1,
+        limit: 10,
+      };
+
+      mockPrismaService.equipamento.findMany.mockResolvedValue([
+        mockEquipamento,
+      ]);
+      mockPrismaService.equipamento.count.mockResolvedValue(1);
+
+      const result = await service.findAll(filters);
+
+      expect(mockPrismaService.equipamento.findMany).toHaveBeenCalledWith({
+        where: {
+          setorAtual: {
+            contains: 'UTI',
+          },
+        },
+        skip: 0,
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              nome: true,
+              username: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      expect(result.data).toHaveLength(1);
+    });
+
+    it('should filter equipamentos by statusOperacional', async () => {
+      const filters: FilterEquipamentoDto = {
+        statusOperacional: StatusOperacional.EM_USO,
+        page: 1,
+        limit: 10,
+      };
+
+      mockPrismaService.equipamento.findMany.mockResolvedValue([
+        mockEquipamento,
+      ]);
+      mockPrismaService.equipamento.count.mockResolvedValue(1);
+
+      const result = await service.findAll(filters);
+
+      expect(mockPrismaService.equipamento.findMany).toHaveBeenCalledWith({
+        where: {
+          statusOperacional: StatusOperacional.EM_USO,
+        },
+        skip: 0,
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              nome: true,
+              username: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      expect(result.data).toHaveLength(1);
+    });
+  });
+
+  describe('update - additional field tests', () => {
+    it('should update equipamento with all fields', async () => {
+      const updateDto: UpdateEquipamentoDto = {
+        nome: 'Monitor Atualizado',
+        tipo: 'Monitor Atualizado',
+        fabricante: 'Fabricante Atualizado',
+        modelo: 'Modelo Atualizado',
+        numeroSerie: 'SN9876543210',
+        codigoPatrimonial: 'PAT-2024-002',
+        setorAtual: 'UTI Atualizada',
+        dataAquisicao: '2024-02-01',
+        valorAquisicao: 20000.0,
+        dataFimGarantia: '2026-02-01',
+        vidaUtilEstimativa: 15,
+        registroAnvisa: '80100470107',
+        classeRisco: 'Classe III',
+        dataUltimaManutencao: '2024-07-01',
+        dataProximaManutencao: '2025-01-01',
+        responsavelTecnico: 'Dr. Maria Silva',
+        criticidade: 'Média',
+        observacoes: 'Equipamento atualizado',
+      };
+
+      const updatedEquipamento = {
+        ...mockEquipamento,
+        ...updateDto,
+        dataAquisicao: new Date('2024-02-01'),
+        dataFimGarantia: new Date('2026-02-01'),
+        dataUltimaManutencao: new Date('2024-07-01'),
+        dataProximaManutencao: new Date('2025-01-01'),
+        user: {
+          id: '987e6543-e21b-43d2-b456-426614174111',
+          username: 'joao.silva',
+          email: 'joao@exemplo.com',
+          nome: 'João Silva',
+        },
+      };
+
+      mockPrismaService.equipamento.findUnique.mockResolvedValue(
+        mockEquipamento,
+      );
+      mockPrismaService.equipamento.update.mockResolvedValue(
+        updatedEquipamento,
+      );
+
+      const result = await service.update(mockEquipamento.id, updateDto);
+
+      expect(result).toBeDefined();
+      expect(result.nome).toBe('Monitor Atualizado');
+      expect(result.tipo).toBe('Monitor Atualizado');
+      expect(result.fabricante).toBe('Fabricante Atualizado');
+      expect(result.modelo).toBe('Modelo Atualizado');
+      expect(result.numeroSerie).toBe('SN9876543210');
+      expect(result.codigoPatrimonial).toBe('PAT-2024-002');
+      expect(result.setorAtual).toBe('UTI Atualizada');
+      expect(result.responsavelTecnico).toBe('Dr. Maria Silva');
+      expect(result.criticidade).toBe('Média');
+      expect(result.observacoes).toBe('Equipamento atualizado');
+    });
+  });
 });

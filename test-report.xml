@@ -1,198 +1,231 @@
 <testExecutions version="1">
+<file path="app.controller.spec.ts">
+<testCase name="AppController root should be defined" duration="55" />
+</file>
+<file path="user\user.service.spec.ts">
+<testCase name="UserService should be defined" duration="34" />
+<testCase name="UserService create should create a new user with hashed password" duration="40" />
+<testCase name="UserService create should throw ConflictException if username already exists" duration="59" />
+<testCase name="UserService create should throw ConflictException if email already exists" duration="7" />
+<testCase name="UserService create should use default tipo if not provided" duration="5" />
+<testCase name="UserService create should throw an error if user creation fails" duration="15" />
+<testCase name="UserService create should throw an error if password hashing fails" duration="4" />
+<testCase name="UserService findByUsername should return user when found by username" duration="5" />
+<testCase name="UserService findByUsername should return null when user not found by username" duration="6" />
+<testCase name="UserService findByUsername should throw an error if database query fails" duration="8" />
+<testCase name="UserService findByEmail should return user when found by email" duration="6" />
+<testCase name="UserService findByEmail should return null when user not found by email" duration="3" />
+<testCase name="UserService findByEmail should throw an error if database query fails" duration="3" />
+<testCase name="UserService findById should return user when found by id" duration="3" />
+<testCase name="UserService findById should return null when user not found by id" duration="4" />
+<testCase name="UserService findById should throw an error if database query fails" duration="4" />
+<testCase name="UserService findAll should return all users without password" duration="4" />
+<testCase name="UserService findAll should return empty array when no users exist" duration="2" />
+<testCase name="UserService findAll should throw an error if database query fails" duration="3" />
+<testCase name="UserService findOne should return user when found by id" duration="4" />
+<testCase name="UserService findOne should throw NotFoundException when user not found" duration="3" />
+<testCase name="UserService findOne should throw an error if database query fails" duration="3" />
+<testCase name="UserService update should update user successfully" duration="4" />
+<testCase name="UserService update should throw NotFoundException when user not found" duration="12" />
+<testCase name="UserService update should throw ConflictException when username already exists" duration="3" />
+<testCase name="UserService update should throw ConflictException when email already exists" duration="3" />
+<testCase name="UserService update should not check username/email if they are not being changed" duration="4" />
+<testCase name="UserService update should not hash password if not provided" duration="6" />
+<testCase name="UserService remove should remove user successfully" duration="13" />
+<testCase name="UserService remove should throw NotFoundException when user not found" duration="15" />
+<testCase name="UserService remove should throw an error if database query fails" duration="3" />
+</file>
+<file path="auth\auth.controller.spec.ts">
+<testCase name="AuthController register should register a new user" duration="57" />
+<testCase name="AuthController register should throw error if registration fails" duration="58" />
+<testCase name="AuthController login should login user and return JWT token" duration="6" />
+<testCase name="AuthController login should throw error if login fails" duration="10" />
+<testCase name="AuthController getProfile should return user profile" duration="14" />
+<testCase name="AuthController verifyToken should verify token and return user data" duration="8" />
+</file>
 <file path="auth\dto\user-register.dto.spec.ts">
-<testCase name="UserRegisterDto should be defined" duration="14" />
-<testCase name="UserRegisterDto should extend BaseUserDto" duration="2" />
-<testCase name="UserRegisterDto validation should pass validation with valid data" duration="8" />
-<testCase name="UserRegisterDto validation should fail validation with invalid email" duration="4" />
-<testCase name="UserRegisterDto validation should fail validation with short password" duration="3" />
+<testCase name="UserRegisterDto should be defined" duration="23" />
+<testCase name="UserRegisterDto should extend BaseUserDto" duration="4" />
+<testCase name="UserRegisterDto validation should pass validation with valid data" duration="14" />
+<testCase name="UserRegisterDto validation should fail validation with invalid email" duration="2" />
+<testCase name="UserRegisterDto validation should fail validation with short password" duration="2" />
+</file>
+<file path="auth\auth.module.spec.ts">
+<testCase name="AuthModule Module Configuration should be defined" duration="61" />
+<testCase name="AuthModule Module Configuration should have AuthController" duration="12" />
+<testCase name="AuthModule Module Configuration should have AuthService" duration="11" />
+<testCase name="AuthModule Module Configuration should have JwtService" duration="8" />
+<testCase name="AuthModule Module Configuration should have JwtStrategy" duration="8" />
+<testCase name="AuthModule Module Configuration should have JwtAuthGuard" duration="6" />
+<testCase name="AuthModule Module Configuration should have ConfigService" duration="8" />
+<testCase name="AuthModule JWT Configuration should configure JWT with correct secret from ConfigService" duration="14" />
+<testCase name="AuthModule JWT Configuration should configure JWT with correct expiration from ConfigService" duration="10" />
+<testCase name="AuthModule JWT Configuration should use default expiration when not provided" duration="24" />
+<testCase name="AuthModule Module Dependencies should configure JwtModule with async registration" duration="7" />
+<testCase name="AuthModule Module Dependencies should have PassportModule configured" duration="13" />
+<testCase name="AuthModule Exports should export AuthService" duration="18" />
+<testCase name="AuthModule Exports should export JwtAuthGuard" duration="10" />
+<testCase name="AuthModule Integration Tests should create module with all dependencies resolved" duration="21" />
+<testCase name="AuthModule Integration Tests should handle missing JWT_SECRET gracefully" duration="15" />
+<testCase name="AuthModule Error Handling should handle ConfigService errors gracefully" duration="27" />
+</file>
+<file path="user\user.module.spec.ts">
+<testCase name="UserModule should be defined" duration="75" />
+<testCase name="UserModule should provide UserService" duration="13" />
+</file>
+<file path="user\user.controller.spec.ts">
+<testCase name="UserController getMyProfile should return user profile without password if user exists" duration="59" />
+<testCase name="UserController getMyProfile should return message if user not found" duration="17" />
+<testCase name="UserController getProtectedData should return protected data with user and timestamp" duration="10" />
+<testCase name="UserController create should create a user" duration="5" />
+<testCase name="UserController findAll should return all users" duration="12" />
+<testCase name="UserController findOne should return user by id" duration="5" />
+<testCase name="UserController update should update user" duration="6" />
+<testCase name="UserController remove should remove user" duration="5" />
+<testCase name="UserController getMyProfile - error handling should handle service errors" duration="13" />
+</file>
+<file path="prisma\prisma.module.spec.ts">
+<testCase name="PrismaModule should be defined" duration="18" />
+<testCase name="PrismaModule should provide PrismaService" duration="14" />
+</file>
+<file path="user\entities\user.entity.spec.ts">
+<testCase name="User should be defined" duration="1" />
+<testCase name="User should have all required properties" duration="5" />
+<testCase name="User should handle different user types" duration="2" />
+</file>
+<file path="auth\auth.service.spec.ts">
+<testCase name="AuthService register should successfully register a new user" duration="29" />
+<testCase name="AuthService register should throw ConflictException when username already exists" duration="37" />
+<testCase name="AuthService register should throw ConflictException when email already exists" duration="44" />
+<testCase name="AuthService register should handle errors during user creation" duration="6" />
+<testCase name="AuthService register should handle errors during JWT signing" duration="5" />
+<testCase name="AuthService register should handle errors during username check" duration="3" />
+<testCase name="AuthService register should handle errors during email check" duration="4" />
+<testCase name="AuthService validateUser should successfully validate user with correct credentials" duration="4" />
+<testCase name="AuthService validateUser should throw UnauthorizedException when user does not exist" duration="7" />
+<testCase name="AuthService validateUser should throw UnauthorizedException when password is incorrect" duration="9" />
+<testCase name="AuthService validateUser should handle errors during user lookup" duration="57" />
+<testCase name="AuthService validateUser should handle errors during password comparison" duration="4" />
+<testCase name="AuthService validateUser should validate user with empty password field" duration="3" />
+<testCase name="AuthService login should successfully generate login response" duration="4" />
+<testCase name="AuthService login should handle errors during JWT signing in login" duration="26" />
+<testCase name="AuthService login should work with user object containing extra properties" duration="8" />
+<testCase name="AuthService login should handle user with null or undefined properties" duration="5" />
+<testCase name="AuthService login should handle minimal user object" duration="8" />
+<testCase name="AuthService service initialization should be defined" duration="17" />
+<testCase name="AuthService service initialization should have userService dependency" duration="17" />
+<testCase name="AuthService service initialization should have jwtService dependency" duration="7" />
+</file>
+<file path="prisma\prisma.service.spec.ts">
+<testCase name="PrismaService should be defined" duration="25" />
+<testCase name="PrismaService should have &#x24;connect and &#x24;disconnect methods" duration="7" />
+<testCase name="PrismaService should call &#x24;connect on onModuleInit" duration="6" />
+<testCase name="PrismaService should call &#x24;disconnect on onModuleDestroy" duration="4" />
+</file>
+<file path="auth\strategies\jwt.strategy.spec.ts">
+<testCase name="JwtStrategy validate should return user data without password when user exists" duration="35" />
+<testCase name="JwtStrategy validate should return null when user does not exist" duration="5" />
+<testCase name="JwtStrategy validate should handle errors from userService" duration="25" />
+</file>
+<file path="user\dto\find-user.dto.spec.ts">
+<testCase name="FindUserDto should be defined" duration="1" />
+<testCase name="FindUserDto should have username property" duration="1" />
+<testCase name="FindUserDto validation should pass validation with valid username" duration="4" />
+<testCase name="FindUserDto validation should fail validation with empty username" duration="2" />
+<testCase name="FindUserDto validation should fail validation with username too short" duration="2" />
+<testCase name="FindUserDto validation should fail validation with username too long" duration="11" />
+<testCase name="FindUserDto validation should fail validation with non-string username" duration="1" />
+</file>
+<file path="equipamentos\equipamentos.service.spec.ts">
+<testCase name="EquipamentosService should be defined" duration="37" />
+<testCase name="EquipamentosService create should create an equipamento successfully" duration="9" />
+<testCase name="EquipamentosService create should throw BadRequestException when user not found" duration="57" />
+<testCase name="EquipamentosService create should create equipamento without userId" duration="4" />
+<testCase name="EquipamentosService findAll should return paginated equipamentos" duration="8" />
+<testCase name="EquipamentosService findAll should return equipamentos without filters" duration="7" />
+<testCase name="EquipamentosService findOne should return equipamento by id" duration="4" />
+<testCase name="EquipamentosService findOne should throw NotFoundException when equipamento not found" duration="5" />
+<testCase name="EquipamentosService update should update equipamento successfully" duration="7" />
+<testCase name="EquipamentosService update should update equipamento with optional fields" duration="10" />
+<testCase name="EquipamentosService update should throw NotFoundException when equipamento not found" duration="4" />
+<testCase name="EquipamentosService update should throw BadRequestException when user not found" duration="4" />
+<testCase name="EquipamentosService updateStatus should update status successfully" duration="8" />
+<testCase name="EquipamentosService updateStatus should throw NotFoundException when equipamento not found" duration="4" />
+<testCase name="EquipamentosService remove should remove equipamento successfully" duration="3" />
+<testCase name="EquipamentosService remove should throw NotFoundException when equipamento not found" duration="3" />
+<testCase name="EquipamentosService findAll - additional filter tests should filter equipamentos by tipo" duration="5" />
+<testCase name="EquipamentosService findAll - additional filter tests should filter equipamentos by setorAtual" duration="3" />
+<testCase name="EquipamentosService findAll - additional filter tests should filter equipamentos by statusOperacional" duration="4" />
+<testCase name="EquipamentosService update - additional field tests should update equipamento with all fields" duration="4" />
+</file>
+<file path="equipamentos\dto\filter-equipamento.dto.spec.ts">
+<testCase name="FilterEquipamentoDto should be valid with all optional fields" duration="5" />
+<testCase name="FilterEquipamentoDto should be valid with minimal fields" duration="1" />
+<testCase name="FilterEquipamentoDto should be valid with empty dto (default values)" duration="1" />
+<testCase name="FilterEquipamentoDto page validation should be invalid with page less than 1" duration="2" />
+<testCase name="FilterEquipamentoDto page validation should be invalid with page as string" duration="2" />
+<testCase name="FilterEquipamentoDto page validation should be valid with page = 1" duration="1" />
+<testCase name="FilterEquipamentoDto page validation should be valid with page = 100" duration="1" />
+<testCase name="FilterEquipamentoDto limit validation should be invalid with limit less than 1" duration="1" />
+<testCase name="FilterEquipamentoDto limit validation should be invalid with limit greater than 100" duration="1" />
+<testCase name="FilterEquipamentoDto limit validation should be invalid with limit as string" duration="1" />
+<testCase name="FilterEquipamentoDto limit validation should be valid with limit = 1" duration="1" />
+<testCase name="FilterEquipamentoDto limit validation should be valid with limit = 100" duration="0" />
+<testCase name="FilterEquipamentoDto statusOperacional validation should be valid with valid status" duration="1" />
+<testCase name="FilterEquipamentoDto statusOperacional validation should be valid with DISPONIVEL status" duration="1" />
+<testCase name="FilterEquipamentoDto statusOperacional validation should be valid with EM_MANUTENCAO status" duration="0" />
+<testCase name="FilterEquipamentoDto statusOperacional validation should be valid with INATIVO status" duration="1" />
+<testCase name="FilterEquipamentoDto statusOperacional validation should be valid with SUCATEADO status" duration="0" />
+<testCase name="FilterEquipamentoDto statusOperacional validation should be invalid with invalid status" duration="2" />
+<testCase name="FilterEquipamentoDto string field validation should be valid with string fields" duration="0" />
+<testCase name="FilterEquipamentoDto string field validation should be valid with empty string fields" duration="1" />
+<testCase name="FilterEquipamentoDto string field validation should be invalid with non-string fields" duration="18" />
 </file>
 <file path="equipamentos\dto\create-equipamento.dto.spec.ts">
-<testCase name="CreateEquipamentoDto should be valid with required fields" duration="19" />
-<testCase name="CreateEquipamentoDto should be invalid without required fields" duration="2" />
-<testCase name="CreateEquipamentoDto should be invalid with empty nome" duration="1" />
-<testCase name="CreateEquipamentoDto should be invalid with nome too short" duration="1" />
-<testCase name="CreateEquipamentoDto should be invalid with nome too long" duration="2" />
-<testCase name="CreateEquipamentoDto should be invalid with invalid statusOperacional" duration="1" />
-<testCase name="CreateEquipamentoDto should be invalid with negative valorAquisicao" duration="2" />
+<testCase name="CreateEquipamentoDto should be valid with required fields" duration="10" />
+<testCase name="CreateEquipamentoDto should be invalid without required fields" duration="8" />
+<testCase name="CreateEquipamentoDto should be invalid with empty nome" duration="5" />
+<testCase name="CreateEquipamentoDto should be invalid with nome too short" duration="3" />
+<testCase name="CreateEquipamentoDto should be invalid with nome too long" duration="3" />
+<testCase name="CreateEquipamentoDto should be invalid with invalid statusOperacional" duration="4" />
+<testCase name="CreateEquipamentoDto should be invalid with negative valorAquisicao" duration="1" />
 <testCase name="CreateEquipamentoDto should be invalid with negative vidaUtilEstimativa" duration="1" />
 <testCase name="CreateEquipamentoDto should be invalid with invalid UUID userId" duration="2" />
-<testCase name="CreateEquipamentoDto should be valid with valid UUID userId" duration="1" />
+<testCase name="CreateEquipamentoDto should be valid with valid UUID userId" duration="3" />
 <testCase name="CreateEquipamentoDto fabricante validation should be valid with valid fabricante" duration="1" />
 <testCase name="CreateEquipamentoDto fabricante validation should be invalid with empty fabricante" duration="1" />
 <testCase name="CreateEquipamentoDto fabricante validation should be invalid with fabricante too short" duration="1" />
 <testCase name="CreateEquipamentoDto fabricante validation should be invalid with fabricante too long" duration="1" />
 <testCase name="UpdateStatusDto should be valid with valid statusOperacional" duration="1" />
-<testCase name="UpdateStatusDto should be invalid without statusOperacional" duration="0" />
+<testCase name="UpdateStatusDto should be invalid without statusOperacional" duration="1" />
 <testCase name="UpdateStatusDto should be invalid with invalid statusOperacional" duration="1" />
-<testCase name="UpdateStatusDto should be valid with all status values" duration="9" />
+<testCase name="UpdateStatusDto should be valid with all status values" duration="10" />
 <testCase name="FilterEquipamentoDto should be valid with all optional fields" duration="1" />
-<testCase name="FilterEquipamentoDto should be valid with empty dto" duration="0" />
-<testCase name="FilterEquipamentoDto should be invalid with negative page" duration="0" />
+<testCase name="FilterEquipamentoDto should be valid with empty dto" duration="2" />
+<testCase name="FilterEquipamentoDto should be invalid with negative page" duration="2" />
 <testCase name="FilterEquipamentoDto should be invalid with zero page" duration="0" />
-<testCase name="FilterEquipamentoDto should be invalid with negative limit" duration="1" />
+<testCase name="FilterEquipamentoDto should be invalid with negative limit" duration="0" />
 <testCase name="FilterEquipamentoDto should be invalid with zero limit" duration="1" />
-<testCase name="FilterEquipamentoDto should be invalid with invalid statusOperacional" duration="1" />
-</file>
-<file path="user\user.module.spec.ts">
-<testCase name="UserModule should be defined" duration="62" />
-<testCase name="UserModule should provide UserService" duration="12" />
-</file>
-<file path="equipamentos\equipamentos.controller.spec.ts">
-<testCase name="EquipamentosController should be defined" duration="37" />
-<testCase name="EquipamentosController create should create an equipamento" duration="14" />
-<testCase name="EquipamentosController create should throw BadRequestException when user not found" duration="92" />
-<testCase name="EquipamentosController findAll should return paginated equipamentos" duration="4" />
-<testCase name="EquipamentosController findAll should return equipamentos without filters" duration="8" />
-<testCase name="EquipamentosController findOne should return equipamento by id" duration="3" />
-<testCase name="EquipamentosController findOne should throw NotFoundException when equipamento not found" duration="4" />
-<testCase name="EquipamentosController update should update equipamento" duration="8" />
-<testCase name="EquipamentosController update should throw NotFoundException when equipamento not found" duration="7" />
-<testCase name="EquipamentosController updateStatus should update equipamento status" duration="4" />
-<testCase name="EquipamentosController updateStatus should throw NotFoundException when equipamento not found" duration="5" />
-<testCase name="EquipamentosController remove should remove equipamento" duration="3" />
-<testCase name="EquipamentosController remove should throw NotFoundException when equipamento not found" duration="4" />
-</file>
-<file path="auth\auth.controller.spec.ts">
-<testCase name="AuthController register should register a new user" duration="74" />
-<testCase name="AuthController register should throw error if registration fails" duration="31" />
-<testCase name="AuthController login should login user and return JWT token" duration="5" />
-<testCase name="AuthController login should throw error if login fails" duration="6" />
-<testCase name="AuthController getProfile should return user profile" duration="5" />
-<testCase name="AuthController verifyToken should verify token and return user data" duration="4" />
-</file>
-<file path="auth\auth.module.spec.ts">
-<testCase name="AuthModule Module Configuration should be defined" duration="57" />
-<testCase name="AuthModule Module Configuration should have AuthController" duration="23" />
-<testCase name="AuthModule Module Configuration should have AuthService" duration="9" />
-<testCase name="AuthModule Module Configuration should have JwtService" duration="11" />
-<testCase name="AuthModule Module Configuration should have JwtStrategy" duration="11" />
-<testCase name="AuthModule Module Configuration should have JwtAuthGuard" duration="20" />
-<testCase name="AuthModule Module Configuration should have ConfigService" duration="17" />
-<testCase name="AuthModule JWT Configuration should configure JWT with correct secret from ConfigService" duration="9" />
-<testCase name="AuthModule JWT Configuration should configure JWT with correct expiration from ConfigService" duration="11" />
-<testCase name="AuthModule JWT Configuration should use default expiration when not provided" duration="28" />
-<testCase name="AuthModule Module Dependencies should configure JwtModule with async registration" duration="11" />
-<testCase name="AuthModule Module Dependencies should have PassportModule configured" duration="15" />
-<testCase name="AuthModule Exports should export AuthService" duration="6" />
-<testCase name="AuthModule Exports should export JwtAuthGuard" duration="5" />
-<testCase name="AuthModule Integration Tests should create module with all dependencies resolved" duration="16" />
-<testCase name="AuthModule Integration Tests should handle missing JWT_SECRET gracefully" duration="13" />
-<testCase name="AuthModule Error Handling should handle ConfigService errors gracefully" duration="12" />
-</file>
-<file path="user\user.service.spec.ts">
-<testCase name="UserService should be defined" duration="8" />
-<testCase name="UserService create should create a new user with hashed password" duration="7" />
-<testCase name="UserService create should throw ConflictException if username already exists" duration="37" />
-<testCase name="UserService create should throw ConflictException if email already exists" duration="4" />
-<testCase name="UserService create should use default tipo if not provided" duration="3" />
-<testCase name="UserService create should throw an error if user creation fails" duration="6" />
-<testCase name="UserService create should throw an error if password hashing fails" duration="4" />
-<testCase name="UserService findByUsername should return user when found by username" duration="5" />
-<testCase name="UserService findByUsername should return null when user not found by username" duration="24" />
-<testCase name="UserService findByUsername should throw an error if database query fails" duration="4" />
-<testCase name="UserService findByEmail should return user when found by email" duration="3" />
-<testCase name="UserService findByEmail should return null when user not found by email" duration="9" />
-<testCase name="UserService findByEmail should throw an error if database query fails" duration="6" />
-<testCase name="UserService findById should return user when found by id" duration="3" />
-<testCase name="UserService findById should return null when user not found by id" duration="6" />
-<testCase name="UserService findById should throw an error if database query fails" duration="4" />
-<testCase name="UserService findAll should return all users without password" duration="23" />
-<testCase name="UserService findAll should return empty array when no users exist" duration="14" />
-<testCase name="UserService findAll should throw an error if database query fails" duration="3" />
-<testCase name="UserService findOne should return user when found by id" duration="2" />
-<testCase name="UserService findOne should throw NotFoundException when user not found" duration="5" />
-<testCase name="UserService findOne should throw an error if database query fails" duration="3" />
-<testCase name="UserService update should update user successfully" duration="13" />
-<testCase name="UserService update should throw NotFoundException when user not found" duration="3" />
-<testCase name="UserService update should throw ConflictException when username already exists" duration="7" />
-<testCase name="UserService update should throw ConflictException when email already exists" duration="4" />
-<testCase name="UserService update should not check username/email if they are not being changed" duration="3" />
-<testCase name="UserService update should not hash password if not provided" duration="3" />
-<testCase name="UserService remove should remove user successfully" duration="3" />
-<testCase name="UserService remove should throw NotFoundException when user not found" duration="3" />
-<testCase name="UserService remove should throw an error if database query fails" duration="4" />
-</file>
-<file path="auth\auth.service.spec.ts">
-<testCase name="AuthService register should successfully register a new user" duration="15" />
-<testCase name="AuthService register should throw ConflictException when username already exists" duration="54" />
-<testCase name="AuthService register should throw ConflictException when email already exists" duration="6" />
-<testCase name="AuthService register should handle errors during user creation" duration="9" />
-<testCase name="AuthService register should handle errors during JWT signing" duration="8" />
-<testCase name="AuthService register should handle errors during username check" duration="9" />
-<testCase name="AuthService register should handle errors during email check" duration="6" />
-<testCase name="AuthService validateUser should successfully validate user with correct credentials" duration="4" />
-<testCase name="AuthService validateUser should throw UnauthorizedException when user does not exist" duration="5" />
-<testCase name="AuthService validateUser should throw UnauthorizedException when password is incorrect" duration="6" />
-<testCase name="AuthService validateUser should handle errors during user lookup" duration="60" />
-<testCase name="AuthService validateUser should handle errors during password comparison" duration="7" />
-<testCase name="AuthService validateUser should validate user with empty password field" duration="3" />
-<testCase name="AuthService login should successfully generate login response" duration="3" />
-<testCase name="AuthService login should handle errors during JWT signing in login" duration="8" />
-<testCase name="AuthService login should work with user object containing extra properties" duration="10" />
-<testCase name="AuthService login should handle user with null or undefined properties" duration="8" />
-<testCase name="AuthService login should handle minimal user object" duration="4" />
-<testCase name="AuthService service initialization should be defined" duration="2" />
-<testCase name="AuthService service initialization should have userService dependency" duration="3" />
-<testCase name="AuthService service initialization should have jwtService dependency" duration="3" />
-</file>
-<file path="auth\strategies\jwt.strategy.spec.ts">
-<testCase name="JwtStrategy validate should return user data without password when user exists" duration="67" />
-<testCase name="JwtStrategy validate should return null when user does not exist" duration="5" />
-<testCase name="JwtStrategy validate should handle errors from userService" duration="32" />
-</file>
-<file path="user\user.controller.spec.ts">
-<testCase name="UserController getMyProfile should return user profile without password if user exists" duration="20" />
-<testCase name="UserController getMyProfile should return message if user not found" duration="3" />
-<testCase name="UserController getProtectedData should return protected data with user and timestamp" duration="38" />
+<testCase name="FilterEquipamentoDto should be invalid with invalid statusOperacional" duration="2" />
 </file>
 <file path="equipamentos\equipamentos.module.spec.ts">
-<testCase name="EquipamentosModule should be defined" duration="28" />
-<testCase name="EquipamentosModule should provide EquipamentosController" duration="6" />
-<testCase name="EquipamentosModule should provide EquipamentosService" duration="7" />
+<testCase name="EquipamentosModule should be defined" duration="9" />
+<testCase name="EquipamentosModule should provide EquipamentosController" duration="3" />
+<testCase name="EquipamentosModule should provide EquipamentosService" duration="3" />
 </file>
-<file path="prisma\prisma.service.spec.ts">
-<testCase name="PrismaService should be defined" duration="34" />
-<testCase name="PrismaService should have &#x24;connect and &#x24;disconnect methods" duration="3" />
-<testCase name="PrismaService should call &#x24;connect on onModuleInit" duration="4" />
-<testCase name="PrismaService should call &#x24;disconnect on onModuleDestroy" duration="4" />
-</file>
-<file path="user\dto\find-user.dto.spec.ts">
-<testCase name="FindUserDto should be defined" duration="1" />
-<testCase name="FindUserDto should have username property" duration="1" />
-<testCase name="FindUserDto validation should pass validation with valid username" duration="16" />
-<testCase name="FindUserDto validation should fail validation with empty username" duration="3" />
-<testCase name="FindUserDto validation should fail validation with username too short" duration="1" />
-<testCase name="FindUserDto validation should fail validation with username too long" duration="1" />
-<testCase name="FindUserDto validation should fail validation with non-string username" duration="0" />
-</file>
-<file path="user\entities\user.entity.spec.ts">
-<testCase name="User should be defined" duration="9" />
-<testCase name="User should have all required properties" duration="4" />
-<testCase name="User should handle different user types" duration="1" />
-</file>
-<file path="app.controller.spec.ts">
-<testCase name="AppController root should be defined" duration="8" />
-</file>
-<file path="prisma\prisma.module.spec.ts">
-<testCase name="PrismaModule should be defined" duration="45" />
-<testCase name="PrismaModule should provide PrismaService" duration="12" />
-</file>
-<file path="equipamentos\equipamentos.service.spec.ts">
-<testCase name="EquipamentosService should be defined" duration="34" />
-<testCase name="EquipamentosService create should create an equipamento successfully" duration="8" />
-<testCase name="EquipamentosService create should throw BadRequestException when user not found" duration="25" />
-<testCase name="EquipamentosService create should create equipamento without userId" duration="2" />
-<testCase name="EquipamentosService findAll should return paginated equipamentos" duration="3" />
-<testCase name="EquipamentosService findAll should return equipamentos without filters" duration="3" />
-<testCase name="EquipamentosService findOne should return equipamento by id" duration="2" />
-<testCase name="EquipamentosService findOne should throw NotFoundException when equipamento not found" duration="2" />
-<testCase name="EquipamentosService update should update equipamento successfully" duration="3" />
-<testCase name="EquipamentosService update should update equipamento with optional fields" duration="3" />
-<testCase name="EquipamentosService update should throw NotFoundException when equipamento not found" duration="1" />
-<testCase name="EquipamentosService update should throw BadRequestException when user not found" duration="2" />
-<testCase name="EquipamentosService updateStatus should update status successfully" duration="2" />
-<testCase name="EquipamentosService updateStatus should throw NotFoundException when equipamento not found" duration="2" />
-<testCase name="EquipamentosService remove should remove equipamento successfully" duration="1" />
-<testCase name="EquipamentosService remove should throw NotFoundException when equipamento not found" duration="2" />
+<file path="equipamentos\equipamentos.controller.spec.ts">
+<testCase name="EquipamentosController should be defined" duration="9" />
+<testCase name="EquipamentosController create should create an equipamento" duration="4" />
+<testCase name="EquipamentosController create should throw BadRequestException when user not found" duration="22" />
+<testCase name="EquipamentosController findAll should return paginated equipamentos" duration="4" />
+<testCase name="EquipamentosController findAll should return equipamentos without filters" duration="3" />
+<testCase name="EquipamentosController findOne should return equipamento by id" duration="5" />
+<testCase name="EquipamentosController findOne should throw NotFoundException when equipamento not found" duration="3" />
+<testCase name="EquipamentosController update should update equipamento" duration="2" />
+<testCase name="EquipamentosController update should throw NotFoundException when equipamento not found" duration="4" />
+<testCase name="EquipamentosController updateStatus should update equipamento status" duration="3" />
+<testCase name="EquipamentosController updateStatus should throw NotFoundException when equipamento not found" duration="4" />
+<testCase name="EquipamentosController remove should remove equipamento" duration="3" />
+<testCase name="EquipamentosController remove should throw NotFoundException when equipamento not found" duration="2" />
 </file>
 </testExecutions>
