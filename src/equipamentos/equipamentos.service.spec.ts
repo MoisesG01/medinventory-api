@@ -384,6 +384,48 @@ describe('EquipamentosService', () => {
       expect(result.statusOperacional).toBe(StatusOperacional.EM_MANUTENCAO);
     });
 
+    it('should update equipamento with optional fields', async () => {
+      const updateDto: UpdateEquipamentoDto = {
+        nome: 'Monitor Atualizado',
+        responsavelTecnico: 'Dr. Maria Silva',
+        criticidade: 'Média',
+        observacoes: 'Equipamento atualizado',
+      };
+
+      const updatedEquipamento = {
+        ...mockEquipamento,
+        ...updateDto,
+      };
+
+      mockPrismaService.equipamento.findUnique.mockResolvedValue(
+        mockEquipamento,
+      );
+      mockPrismaService.equipamento.update.mockResolvedValue(
+        updatedEquipamento,
+      );
+
+      const result = await service.update(mockEquipamento.id, updateDto);
+
+      expect(mockPrismaService.equipamento.findUnique).toHaveBeenCalledWith({
+        where: { id: mockEquipamento.id },
+      });
+      expect(mockPrismaService.equipamento.update).toHaveBeenCalledWith({
+        where: { id: mockEquipamento.id },
+        data: updateDto,
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              email: true,
+              nome: true,
+            },
+          },
+        },
+      });
+      expect(result).toEqual(updatedEquipamento);
+    });
+
     it('should throw NotFoundException when equipamento not found', async () => {
       mockPrismaService.equipamento.findUnique.mockResolvedValue(null);
 

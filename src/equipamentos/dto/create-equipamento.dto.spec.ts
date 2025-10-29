@@ -130,6 +130,59 @@ describe('CreateEquipamentoDto', () => {
     const errors = await validate(dto);
     expect(errors).toHaveLength(0);
   });
+
+  describe('fabricante validation', () => {
+    it('should be valid with valid fabricante', async () => {
+      const dto = new CreateEquipamentoDto();
+      dto.nome = 'Monitor';
+      dto.tipo = 'Monitor de Sinais Vitais';
+      dto.fabricante = 'Philips';
+      dto.modelo = 'MX450';
+      dto.statusOperacional = StatusOperacional.EM_USO;
+
+      const errors = await validate(dto);
+      expect(errors).toHaveLength(0);
+    });
+
+    it('should be invalid with empty fabricante', async () => {
+      const dto = new CreateEquipamentoDto();
+      dto.nome = 'Monitor';
+      dto.tipo = 'Monitor de Sinais Vitais';
+      dto.fabricante = '';
+      dto.modelo = 'MX450';
+      dto.statusOperacional = StatusOperacional.EM_USO;
+
+      const errors = await validate(dto);
+      expect(errors).toHaveLength(1);
+      expect(errors[0].property).toBe('fabricante');
+    });
+
+    it('should be invalid with fabricante too short', async () => {
+      const dto = new CreateEquipamentoDto();
+      dto.nome = 'Monitor';
+      dto.tipo = 'Monitor de Sinais Vitais';
+      dto.fabricante = 'A';
+      dto.modelo = 'MX450';
+      dto.statusOperacional = StatusOperacional.EM_USO;
+
+      const errors = await validate(dto);
+      expect(errors).toHaveLength(1);
+      expect(errors[0].property).toBe('fabricante');
+    });
+
+    it('should be invalid with fabricante too long', async () => {
+      const dto = new CreateEquipamentoDto();
+      dto.nome = 'Monitor';
+      dto.tipo = 'Monitor de Sinais Vitais';
+      dto.fabricante = 'A'.repeat(101);
+      dto.modelo = 'MX450';
+      dto.statusOperacional = StatusOperacional.EM_USO;
+
+      const errors = await validate(dto);
+      expect(errors).toHaveLength(1);
+      expect(errors[0].property).toBe('fabricante');
+    });
+  });
 });
 
 describe('UpdateStatusDto', () => {
