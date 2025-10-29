@@ -1,0 +1,7 @@
+export enum StatusOperacional {
+  DISPONIVEL = 'DISPONIVEL',
+  EM_USO = 'EM_USO',
+  EM_MANUTENCAO = 'EM_MANUTENCAO',
+  INATIVO = 'INATIVO',
+  SUCATEADO = 'SUCATEADO',
+}

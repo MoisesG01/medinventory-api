@@ -14,13 +14,49 @@ enum UserType {
   UsuarioComum
 }
 
+enum StatusOperacional {
+  DISPONIVEL
+  EM_USO
+  EM_MANUTENCAO
+  INATIVO
+  SUCATEADO
+}
+
 model User {
-  id        String   @id @default(uuid())
-  username  String   @unique
-  password  String
-  email     String   @unique
-  nome      String
-  tipo      UserType @default(UsuarioComum)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String        @id @default(uuid())
+  username     String        @unique
+  password     String
+  email        String        @unique
+  nome         String
+  tipo         UserType      @default(UsuarioComum)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  equipamentos Equipamento[]
+}
+
+model Equipamento {
+  id                    String            @id @default(uuid())
+  nome                  String
+  tipo                  String
+  fabricante            String
+  modelo                String
+  numeroSerie           String?
+  codigoPatrimonial     String?
+  setorAtual            String?
+  statusOperacional     StatusOperacional
+  dataAquisicao         DateTime?
+  valorAquisicao        Float?
+  dataFimGarantia       DateTime?
+  vidaUtilEstimativa    Int?
+  registroAnvisa        String?
+  classeRisco           String?
+  dataUltimaManutencao  DateTime?
+  dataProximaManutencao DateTime?
+  responsavelTecnico    String?
+  criticidade           String?
+  observacoes           String?
+  userId                String?
+  user                  User?                @relation(fields: [userId], references: [id])
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
 }

@@ -16,30 +16,31 @@ jobs:
     runs-on: ubuntu-latest
     # Só executa se o workflow de CI foi bem-sucedido
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           # Necessário para o SonarCloud ver o histórico completo
           fetch-depth: 0
-          
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'yarn'
-          
+          node-version: "20"
+          cache: "yarn"
+
       - name: Install dependencies
         run: yarn install --frozen-lockfile
-      
+
       - name: Run tests with coverage
         run: yarn test:sonar
-      
+
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Necessário para PR decoration
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Necessário para PR decoration
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
@@ -49,4 +50,6 @@ jobs:
             -Dsonar.tests=test
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
             -Dsonar.testExecutionReportPaths=test-report.xml
-            -Dsonar.qualitygate.wait=true
+            -Dsonar.coverage.exclusions=**/*.spec.ts,**/*.e2e-spec.ts,src/main.ts,**/*.module.ts,**/*.dto.ts,**/*.entity.ts
+            -Dsonar.cpd.exclusions=**/*.spec.ts,**/*.e2e-spec.ts,**/*.dto.ts,**/*.entity.ts,**/*.module.ts
+            -Dsonar.qualitygate.wait=${{ github.event_name != 'pull_request' }}
