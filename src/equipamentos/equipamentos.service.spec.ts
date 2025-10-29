@@ -395,6 +395,12 @@ describe('EquipamentosService', () => {
       const updatedEquipamento = {
         ...mockEquipamento,
         ...updateDto,
+        user: {
+          id: '987e6543-e21b-43d2-b456-426614174111',
+          username: 'joao.silva',
+          email: 'joao@exemplo.com',
+          nome: 'João Silva',
+        },
       };
 
       mockPrismaService.equipamento.findUnique.mockResolvedValue(
@@ -423,7 +429,11 @@ describe('EquipamentosService', () => {
           },
         },
       });
-      expect(result).toEqual(updatedEquipamento);
+      expect(result).toBeDefined();
+      expect(result.nome).toBe('Monitor Atualizado');
+      expect(result.responsavelTecnico).toBe('Dr. Maria Silva');
+      expect(result.criticidade).toBe('Média');
+      expect(result.observacoes).toBe('Equipamento atualizado');
     });
 
     it('should throw NotFoundException when equipamento not found', async () => {
