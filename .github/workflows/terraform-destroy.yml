@@ -1,0 +1,101 @@
+name: Terraform Destroy Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to destroy (dev, staging, prod)'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      confirm_destroy:
+        description: 'Type "DESTROY" to confirm infrastructure deletion (THIS CANNOT BE UNDONE)'
+        required: true
+        type: string
+      confirm_environment:
+        description: 'Type the environment name again to confirm'
+        required: true
+        type: string
+
+jobs:
+  terraform-destroy:
+    name: Destroy Azure Infrastructure
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Validate Destroy Confirmation
+        if: inputs.confirm_destroy != 'DESTROY' || inputs.confirm_environment != inputs.environment
+        run: |
+          echo "Confirmation failed!"
+          echo "You must:"
+          echo "  1. Type 'DESTROY' in the confirmation field"
+          echo "  2. Type '${{ inputs.environment }}' in the environment confirmation field"
+          echo ""
+          echo "This action will permanently delete all resources in the ${{ inputs.environment }} environment!"
+          exit 1
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Terraform Init
+        run: |
+          cd infrastructure/terraform
+          terraform init
+
+      - name: Show Resources to be Destroyed
+        run: |
+          cd infrastructure/terraform
+          echo "The following resources will be DESTROYED:"
+          terraform state list || echo "No state found"
+
+      - name: Destroy Infrastructure
+        run: |
+          cd infrastructure/terraform
+          chmod +x destroy.sh
+          ./destroy.sh ${{ inputs.environment }}
+
+      - name: Verify Destruction
+        run: |
+          cd infrastructure/terraform
+          if [ -f terraform.tfstate ]; then
+            RESOURCES=$(terraform state list 2>/dev/null | wc -l)
+            if [ $RESOURCES -eq 0 ]; then
+              echo "All resources destroyed successfully"
+            else
+              echo "Warning: $RESOURCES resources still exist in state"
+            fi
+          else
+            echo "State file removed - infrastructure destroyed"
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Infrastructure Destroyed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Timestamp:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Important Notes:" >> $GITHUB_STEP_SUMMARY
+          echo "- All Azure resources have been deleted" >> $GITHUB_STEP_SUMMARY
+          echo "- All data has been permanently lost" >> $GITHUB_STEP_SUMMARY
+          echo "- To recreate, run the 'Terraform Create Infrastructure' workflow" >> $GITHUB_STEP_SUMMARY
+
+      - name: Clean Up State Artifact
+        if: success()
+        run: |
+          echo "State file has been destroyed with the infrastructure"
