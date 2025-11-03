@@ -29,6 +29,8 @@ jobs:
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
 
       - name: Azure Login
         uses: azure/login@v1
@@ -56,6 +58,9 @@ jobs:
           echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
           echo "acr_username=$ACR_USERNAME" >> $GITHUB_OUTPUT
           echo "acr_password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
+          
+          echo "ACR Login Server: $ACR_LOGIN_SERVER"
+          echo "ACR Username: $ACR_USERNAME"
 
       - name: Install Application Dependencies
         run: npm ci
@@ -74,7 +79,15 @@ jobs:
 
       - name: Push Docker Image to ACR
         run: |
-          docker push ${{ steps.acr-creds.outputs.acr_login_server }}/medinventory:latest
+          echo "Pushing image to ACR..."
+          docker push ${{ steps.acr-creds.outputs.acr_login_server }}/medinventory-api:latest
+          echo "Image pushed successfully"
+          
+      - name: Verify Image in ACR
+        run: |
+          echo "Verifying image in ACR..."
+          az acr repository list --name medinventoryacrdev --output table
+          az acr repository show-tags --name medinventoryacrdev --repository medinventory-api --output table
 
       - name: Restart App Service
         run: |
