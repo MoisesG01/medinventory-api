@@ -21,7 +21,7 @@ jobs:
   terraform-create:
     name: Create Azure Infrastructure
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Validate Confirmation
         if: inputs.confirm != 'CREATE'
@@ -47,26 +47,25 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Install Dependencies
-        run: |
-          cd infrastructure/terraform
-          terraform init
+      - name: Terraform Init
+        working-directory: infrastructure/terraform
+        run: terraform init
 
-      - name: Validate Terraform Configuration
-        run: |
-          cd infrastructure/terraform
-          terraform validate
+      - name: Terraform Validate
+        working-directory: infrastructure/terraform
+        run: terraform validate
 
-      - name: Create Infrastructure
-        run: |
-          cd infrastructure/terraform
-          chmod +x create.sh
-          ./create.sh ${{ inputs.environment }}
+      - name: Terraform Plan
+        working-directory: infrastructure/terraform
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: infrastructure/terraform
+        run: terraform apply -auto-approve tfplan
 
       - name: Show Outputs
-        run: |
-          cd infrastructure/terraform
-          terraform output
+        working-directory: infrastructure/terraform
+        run: terraform output
 
       - name: Summary
         run: |
