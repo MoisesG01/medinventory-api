@@ -56,7 +56,7 @@ jobs:
             echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
             
             echo "ACR Name: $ACR_NAME"
-            echo "✅ACR Login Server: $ACR_LOGIN_SERVER"
+            echo "ACR Login Server: $ACR_LOGIN_SERVER"
           else
             echo "ERROR: ACR '$ACR_NAME' not found in resource group '$RESOURCE_GROUP'"
             echo "Please run 'Terraform Create Infrastructure' workflow first"
