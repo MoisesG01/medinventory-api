@@ -32,6 +32,11 @@ output "database_url" {
   sensitive   = true
 }
 
+output "container_registry_name" {
+  description = "ACR name"
+  value       = azurerm_container_registry.main.name
+}
+
 output "container_registry_login_server" {
   description = "ACR login server"
   value       = azurerm_container_registry.main.login_server
