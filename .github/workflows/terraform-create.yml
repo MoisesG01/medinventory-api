@@ -1,0 +1,87 @@
+name: Terraform Create Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to create (dev, staging, prod)'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      confirm:
+        description: 'Type "CREATE" to confirm infrastructure creation'
+        required: true
+        type: string
+
+jobs:
+  terraform-create:
+    name: Create Azure Infrastructure
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Validate Confirmation
+        if: inputs.confirm != 'CREATE'
+        run: |
+          echo "Confirmation failed. You must type 'CREATE' to proceed."
+          exit 1
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Install Dependencies
+        run: |
+          cd infrastructure/terraform
+          terraform init
+
+      - name: Validate Terraform Configuration
+        run: |
+          cd infrastructure/terraform
+          terraform validate
+
+      - name: Create Infrastructure
+        run: |
+          cd infrastructure/terraform
+          chmod +x create.sh
+          ./create.sh ${{ inputs.environment }}
+
+      - name: Show Outputs
+        run: |
+          cd infrastructure/terraform
+          terraform output
+
+      - name: Summary
+        run: |
+          echo "## Infrastructure Created Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Run 'Terraform Start Application' workflow to deploy the app" >> $GITHUB_STEP_SUMMARY
+          echo "2. Check Azure Portal for created resources" >> $GITHUB_STEP_SUMMARY
+          echo "3. Access the application at the URL shown in outputs" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Terraform State
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-state-${{ inputs.environment }}
+          path: infrastructure/terraform/terraform.tfstate
+          retention-days: 30
