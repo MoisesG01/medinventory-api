@@ -40,6 +40,13 @@ variable "app_service_sku" {
   default     = "B1"  # Basic tier
 }
 
+variable "sp_object_id" {
+  description = "Object ID of the GitHub Actions Service Principal (for ACR push permissions)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
 variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)

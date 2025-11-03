@@ -47,20 +47,18 @@ jobs:
         working-directory: infrastructure/terraform
         run: terraform init
 
-      - name: Get ACR Credentials
-        id: acr-creds
+      - name: Get ACR Name
+        id: acr-info
         working-directory: infrastructure/terraform
         run: |
+          ACR_NAME=$(terraform output -raw container_registry_name)
           ACR_LOGIN_SERVER=$(terraform output -raw container_registry_login_server)
-          ACR_USERNAME=$(terraform output -raw container_registry_admin_username)
-          ACR_PASSWORD=$(terraform output -raw container_registry_admin_password)
           
+          echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
           echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
-          echo "acr_username=$ACR_USERNAME" >> $GITHUB_OUTPUT
-          echo "acr_password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
           
+          echo "ACR Name: $ACR_NAME"
           echo "ACR Login Server: $ACR_LOGIN_SERVER"
-          echo "ACR Username: $ACR_USERNAME"
 
       - name: Install Application Dependencies
         run: npm ci
@@ -68,19 +66,19 @@ jobs:
       - name: Run Application Build
         run: npm run build
 
-      - name: Build Docker Image
+      - name: Login to Azure Container Registry (via Service Principal)
         run: |
-          docker build -t medinventory:latest .
-          docker tag medinventory:latest ${{ steps.acr-creds.outputs.acr_login_server }}/medinventory:latest
+          echo "Logging into ACR using Service Principal..."
+          az acr login --name ${{ steps.acr-info.outputs.acr_name }}
+          echo "Successfully logged into ACR"
 
-      - name: Login to Azure Container Registry
+      - name: Build and Push Docker Image
         run: |
-          echo "${{ steps.acr-creds.outputs.acr_password }}" | docker login ${{ steps.acr-creds.outputs.acr_login_server }} -u ${{ steps.acr-creds.outputs.acr_username }} --password-stdin
-
-      - name: Push Docker Image to ACR
-        run: |
+          echo "Building Docker image..."
+          docker build -t ${{ steps.acr-info.outputs.acr_login_server }}/medinventory-api:latest .
+          
           echo "Pushing image to ACR..."
-          docker push ${{ steps.acr-creds.outputs.acr_login_server }}/medinventory-api:latest
+          docker push ${{ steps.acr-info.outputs.acr_login_server }}/medinventory-api:latest
           echo "Image pushed successfully"
           
       - name: Verify Image in ACR

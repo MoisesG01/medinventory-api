@@ -57,7 +57,7 @@ jobs:
 
       - name: Terraform Plan
         working-directory: infrastructure/terraform
-        run: terraform plan -out=tfplan
+        run: terraform plan -var="github_actions_sp_object_id=${{ secrets.SP_OBJECT_ID }}" -out=tfplan
 
       - name: Terraform Apply
         working-directory: infrastructure/terraform
