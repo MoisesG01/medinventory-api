@@ -42,23 +42,43 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform Init
+        working-directory: infrastructure/terraform
+        run: terraform init
+
+      - name: Get ACR Credentials
+        id: acr-creds
+        working-directory: infrastructure/terraform
         run: |
-          cd infrastructure/terraform
-          terraform init
+          ACR_LOGIN_SERVER=$(terraform output -raw container_registry_login_server)
+          ACR_USERNAME=$(terraform output -raw container_registry_admin_username)
+          ACR_PASSWORD=$(terraform output -raw container_registry_admin_password)
+          
+          echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+          echo "acr_username=$ACR_USERNAME" >> $GITHUB_OUTPUT
+          echo "acr_password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
 
       - name: Install Application Dependencies
-        run: |
-          npm ci
+        run: npm ci
 
       - name: Run Application Build
-        run: |
-          npm run build
+        run: npm run build
 
-      - name: Deploy Application
+      - name: Build Docker Image
         run: |
-          cd infrastructure/terraform
-          chmod +x start.sh
-          ./start.sh ${{ inputs.environment }}
+          docker build -t medinventory:latest .
+          docker tag medinventory:latest ${{ steps.acr-creds.outputs.acr_login_server }}/medinventory:latest
+
+      - name: Login to Azure Container Registry
+        run: |
+          echo "${{ steps.acr-creds.outputs.acr_password }}" | docker login ${{ steps.acr-creds.outputs.acr_login_server }} -u ${{ steps.acr-creds.outputs.acr_username }} --password-stdin
+
+      - name: Push Docker Image to ACR
+        run: |
+          docker push ${{ steps.acr-creds.outputs.acr_login_server }}/medinventory:latest
+
+      - name: Restart App Service
+        run: |
+          az webapp restart --name medinventory-app-${{ inputs.environment }} --resource-group medinventory-rg
 
       - name: Get Application URL
         id: get-url
@@ -96,8 +116,13 @@ jobs:
           echo "**Environment:** ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
           echo "**Application URL:** ${{ steps.get-url.outputs.app_url }}" >> $GITHUB_STEP_SUMMARY
           echo "**Swagger API:** ${{ steps.get-url.outputs.app_url }}/api" >> $GITHUB_STEP_SUMMARY
+          echo "**Docker Image:** ${{ steps.acr-creds.outputs.acr_login_server }}/medinventory:latest" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Quick Links:" >> $GITHUB_STEP_SUMMARY
           echo "- [Application](${{ steps.get-url.outputs.app_url }})" >> $GITHUB_STEP_SUMMARY
           echo "- [Health Check](${{ steps.get-url.outputs.app_url }}/health)" >> $GITHUB_STEP_SUMMARY
           echo "- [Swagger Docs](${{ steps.get-url.outputs.app_url }}/api)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Deployment Details:" >> $GITHUB_STEP_SUMMARY
+          echo "- Container Registry: ${{ steps.acr-creds.outputs.acr_login_server }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Image Tag: latest" >> $GITHUB_STEP_SUMMARY
