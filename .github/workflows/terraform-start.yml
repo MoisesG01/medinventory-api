@@ -47,45 +47,36 @@ jobs:
         working-directory: infrastructure/terraform
         run: terraform init
 
-      - name: Get ACR Name
-        id: acr-info
+      - name: Get App Service Name
+        id: app-info
         working-directory: infrastructure/terraform
         run: |
+          APP_NAME=$(terraform output -raw app_service_name)
+          RESOURCE_GROUP=$(terraform output -raw resource_group_name)
+          
+          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
+          echo "resource_group=$RESOURCE_GROUP" >> $GITHUB_OUTPUT
+          
+          echo "App Service: $APP_NAME"
+          echo "Resource Group: $RESOURCE_GROUP"
+
+      - name: Verify Docker Image Exists in ACR
+        run: |
+          echo "Checking if Docker image exists in ACR..."
           ACR_NAME=$(terraform output -raw container_registry_name)
-          ACR_LOGIN_SERVER=$(terraform output -raw container_registry_login_server)
           
-          echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
-          echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
-          
-          echo "ACR Name: $ACR_NAME"
-          echo "ACR Login Server: $ACR_LOGIN_SERVER"
-
-      - name: Install Application Dependencies
-        run: npm ci
-
-      - name: Run Application Build
-        run: npm run build
-
-      - name: Login to Azure Container Registry (via Service Principal)
-        run: |
-          echo "Logging into ACR using Service Principal..."
-          az acr login --name ${{ steps.acr-info.outputs.acr_name }}
-          echo "Successfully logged into ACR"
-
-      - name: Build and Push Docker Image
-        run: |
-          echo "Building Docker image..."
-          docker build -t ${{ steps.acr-info.outputs.acr_login_server }}/medinventory-api:latest .
-          
-          echo "Pushing image to ACR..."
-          docker push ${{ steps.acr-info.outputs.acr_login_server }}/medinventory-api:latest
-          echo "Image pushed successfully"
-          
-      - name: Verify Image in ACR
-        run: |
-          echo "Verifying image in ACR..."
-          az acr repository list --name medinventoryacrdev --output table
-          az acr repository show-tags --name medinventoryacrdev --repository medinventory-api --output table
+          if az acr repository show --name $ACR_NAME --repository medinventory-api > /dev/null 2>&1; then
+            echo "Docker image 'medinventory-api' found in ACR"
+            echo ""
+            echo "Available tags:"
+            az acr repository show-tags --name $ACR_NAME --repository medinventory-api --output table
+          else
+            echo "ERROR: Docker image 'medinventory-api' not found in ACR"
+            echo ""
+            echo "Please run the 'Build and Push Docker Image' workflow first!"
+            exit 1
+          fi
+        working-directory: infrastructure/terraform
 
       - name: Restart App Service
         run: |
@@ -122,18 +113,18 @@ jobs:
       - name: Summary
         if: always()
         run: |
-          echo "## Application Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "## Application Restarted" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Environment:** ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**App Service:** ${{ steps.app-info.outputs.app_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Resource Group:** ${{ steps.app-info.outputs.resource_group }}" >> $GITHUB_STEP_SUMMARY
           echo "**Application URL:** ${{ steps.get-url.outputs.app_url }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Swagger API:** ${{ steps.get-url.outputs.app_url }}/api" >> $GITHUB_STEP_SUMMARY
-          echo "**Docker Image:** ${{ steps.acr-creds.outputs.acr_login_server }}/medinventory:latest" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Quick Links:" >> $GITHUB_STEP_SUMMARY
-          echo "- [Application](${{ steps.get-url.outputs.app_url }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [Application Home](${{ steps.get-url.outputs.app_url }})" >> $GITHUB_STEP_SUMMARY
           echo "- [Health Check](${{ steps.get-url.outputs.app_url }}/health)" >> $GITHUB_STEP_SUMMARY
-          echo "- [Swagger Docs](${{ steps.get-url.outputs.app_url }}/api)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Swagger API Docs](${{ steps.get-url.outputs.app_url }}/api)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Deployment Details:" >> $GITHUB_STEP_SUMMARY
-          echo "- Container Registry: ${{ steps.acr-creds.outputs.acr_login_server }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Image Tag: latest" >> $GITHUB_STEP_SUMMARY
+          echo "### Note:" >> $GITHUB_STEP_SUMMARY
+          echo "This workflow only restarts the App Service with the existing Docker image." >> $GITHUB_STEP_SUMMARY
+          echo "To update the image, run the **Build and Push Docker Image** workflow first." >> $GITHUB_STEP_SUMMARY

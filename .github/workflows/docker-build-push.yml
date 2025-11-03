@@ -1,0 +1,161 @@
+name: Build and Push Docker Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment (dev, staging, prod)'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      tag:
+        description: 'Docker image tag (default: latest)'
+        required: false
+        default: 'latest'
+        type: string
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Image to ACR
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Setup Terraform (to get ACR info)
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        working-directory: infrastructure/terraform
+        run: terraform init
+
+      - name: Get ACR Information
+        id: acr-info
+        working-directory: infrastructure/terraform
+        run: |
+          ACR_NAME=$(terraform output -raw container_registry_name)
+          ACR_LOGIN_SERVER=$(terraform output -raw container_registry_login_server)
+          
+          echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
+          echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+          
+          echo "ACR Name: $ACR_NAME"
+          echo "ACR Login Server: $ACR_LOGIN_SERVER"
+
+      - name: Install Application Dependencies
+        run: |
+          echo "Installing dependencies..."
+          npm ci
+
+      - name: Build Application
+        run: |
+          echo "Building application..."
+          npm run build
+          echo "Application built successfully"
+
+      - name: Login to Azure Container Registry
+        run: |
+          echo "Logging into ACR: ${{ steps.acr-info.outputs.acr_name }}"
+          az acr login --name ${{ steps.acr-info.outputs.acr_name }}
+          echo "Successfully logged into ACR"
+
+      - name: Build Docker Image
+        run: |
+          IMAGE_NAME="${{ steps.acr-info.outputs.acr_login_server }}/medinventory-api"
+          IMAGE_TAG="${{ inputs.tag }}"
+          
+          echo "Building Docker image: $IMAGE_NAME:$IMAGE_TAG"
+          docker build -t $IMAGE_NAME:$IMAGE_TAG .
+          
+          # Also tag as latest if not already
+          if [ "$IMAGE_TAG" != "latest" ]; then
+            echo "Also tagging as latest"
+            docker tag $IMAGE_NAME:$IMAGE_TAG $IMAGE_NAME:latest
+          fi
+          
+          echo "Docker image built successfully"
+
+      - name: List Local Docker Images
+        run: |
+          echo "Local Docker images:"
+          docker images | grep medinventory-api || echo "No medinventory-api images found"
+
+      - name: Push Docker Image to ACR
+        run: |
+          IMAGE_NAME="${{ steps.acr-info.outputs.acr_login_server }}/medinventory-api"
+          IMAGE_TAG="${{ inputs.tag }}"
+          
+          echo "Pushing image: $IMAGE_NAME:$IMAGE_TAG"
+          docker push $IMAGE_NAME:$IMAGE_TAG
+          
+          # Also push latest if we tagged it
+          if [ "$IMAGE_TAG" != "latest" ]; then
+            echo "Pushing latest tag"
+            docker push $IMAGE_NAME:latest
+          fi
+          
+          echo "Image pushed successfully to ACR"
+
+      - name: Verify Image in ACR
+        run: |
+          echo "Verifying images in ACR..."
+          echo ""
+          echo "All repositories:"
+          az acr repository list --name ${{ steps.acr-info.outputs.acr_name }} --output table
+          echo ""
+          echo "Tags for medinventory-api:"
+          az acr repository show-tags --name ${{ steps.acr-info.outputs.acr_name }} --repository medinventory-api --output table || echo "⚠️ Repository not found or no tags"
+
+      - name: Get Image Details
+        id: image-details
+        run: |
+          IMAGE_NAME="${{ steps.acr-info.outputs.acr_login_server }}/medinventory-api"
+          IMAGE_TAG="${{ inputs.tag }}"
+          
+          # Get image digest
+          DIGEST=$(az acr repository show --name ${{ steps.acr-info.outputs.acr_name }} --image medinventory-api:$IMAGE_TAG --query "digest" -o tsv || echo "unknown")
+          
+          echo "image_full_name=$IMAGE_NAME:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "digest=$DIGEST" >> $GITHUB_OUTPUT
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Docker Image Build & Push Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ steps.image-details.outputs.image_full_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Digest:** \`${{ steps.image-details.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Registry:** ${{ steps.acr-info.outputs.acr_login_server }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Run **Terraform Start Application** workflow to deploy this image" >> $GITHUB_STEP_SUMMARY
+          echo "2. Or configure App Service to use this image manually" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Useful Commands:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# Pull this image locally" >> $GITHUB_STEP_SUMMARY
+          echo "az acr login --name ${{ steps.acr-info.outputs.acr_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ steps.image-details.outputs.image_full_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# List all tags" >> $GITHUB_STEP_SUMMARY
+          echo "az acr repository show-tags --name ${{ steps.acr-info.outputs.acr_name }} --repository medinventory-api" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
