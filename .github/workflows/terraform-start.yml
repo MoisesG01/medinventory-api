@@ -37,33 +37,51 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.6.0
-          terraform_wrapper: false
-
-      - name: Terraform Init
-        working-directory: infrastructure/terraform
-        run: terraform init
-
-      - name: Get App Service Name
-        id: app-info
-        working-directory: infrastructure/terraform
+      - name: Get Azure Resources Information
+        id: azure-info
         run: |
-          APP_NAME=$(terraform output -raw app_service_name)
-          RESOURCE_GROUP=$(terraform output -raw resource_group_name)
+          RESOURCE_GROUP="medinventory-rg"
+          ENVIRONMENT="${{ inputs.environment }}"
+          
+          APP_NAME="medinventory-app-${ENVIRONMENT}"
+          ACR_NAME="medinventoryacr${ENVIRONMENT}"
+          
+          echo "Looking for resources in: $RESOURCE_GROUP"
+          echo "  - App Service: $APP_NAME"
+          echo "  - ACR: $ACR_NAME"
+          
+          # Verify App Service exists
+          if ! az webapp show --name $APP_NAME --resource-group $RESOURCE_GROUP &> /dev/null; then
+            echo "ERROR: App Service '$APP_NAME' not found"
+            echo "Please run 'Terraform Create Infrastructure' workflow first"
+            exit 1
+          fi
+          
+          # Verify ACR exists
+          if ! az acr show --name $ACR_NAME --resource-group $RESOURCE_GROUP &> /dev/null; then
+            echo "ERROR: ACR '$ACR_NAME' not found"
+            echo "Please run 'Terraform Create Infrastructure' workflow first"
+            exit 1
+          fi
+          
+          ACR_LOGIN_SERVER=$(az acr show --name $ACR_NAME --resource-group $RESOURCE_GROUP --query "loginServer" -o tsv)
+          APP_URL=$(az webapp show --name $APP_NAME --resource-group $RESOURCE_GROUP --query "defaultHostName" -o tsv)
           
           echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
           echo "resource_group=$RESOURCE_GROUP" >> $GITHUB_OUTPUT
+          echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
+          echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+          echo "app_url=https://$APP_URL" >> $GITHUB_OUTPUT
           
           echo "App Service: $APP_NAME"
           echo "Resource Group: $RESOURCE_GROUP"
+          echo "ACR: $ACR_NAME"
+          echo "App URL: https://$APP_URL"
 
       - name: Verify Docker Image Exists in ACR
         run: |
           echo "Checking if Docker image exists in ACR..."
-          ACR_NAME=$(terraform output -raw container_registry_name)
+          ACR_NAME="${{ steps.azure-info.outputs.acr_name }}"
           
           if az acr repository show --name $ACR_NAME --repository medinventory-api > /dev/null 2>&1; then
             echo "Docker image 'medinventory-api' found in ACR"
@@ -76,18 +94,14 @@ jobs:
             echo "Please run the 'Build and Push Docker Image' workflow first!"
             exit 1
           fi
-        working-directory: infrastructure/terraform
 
       - name: Restart App Service
         run: |
-          az webapp restart --name medinventory-app-${{ inputs.environment }} --resource-group medinventory-rg
-
-      - name: Get Application URL
-        id: get-url
-        run: |
-          cd infrastructure/terraform
-          APP_URL=$(terraform output -raw app_service_url)
-          echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
+          echo "Restarting App Service..."
+          az webapp restart \
+            --name ${{ steps.azure-info.outputs.app_name }} \
+            --resource-group ${{ steps.azure-info.outputs.resource_group }}
+          echo "App Service restarted successfully"
 
       - name: Wait for Application Startup
         run: |
@@ -96,7 +110,7 @@ jobs:
 
       - name: Health Check
         run: |
-          APP_URL="${{ steps.get-url.outputs.app_url }}"
+          APP_URL="${{ steps.azure-info.outputs.app_url }}"
           echo "Checking health endpoint: $APP_URL/health"
           
           for i in {1..5}; do
@@ -116,14 +130,14 @@ jobs:
           echo "## Application Restarted" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Environment:** ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
-          echo "**App Service:** ${{ steps.app-info.outputs.app_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Resource Group:** ${{ steps.app-info.outputs.resource_group }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Application URL:** ${{ steps.get-url.outputs.app_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "**App Service:** ${{ steps.azure-info.outputs.app_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Resource Group:** ${{ steps.azure-info.outputs.resource_group }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Application URL:** ${{ steps.azure-info.outputs.app_url }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Quick Links:" >> $GITHUB_STEP_SUMMARY
-          echo "- [Application Home](${{ steps.get-url.outputs.app_url }})" >> $GITHUB_STEP_SUMMARY
-          echo "- [Health Check](${{ steps.get-url.outputs.app_url }}/health)" >> $GITHUB_STEP_SUMMARY
-          echo "- [Swagger API Docs](${{ steps.get-url.outputs.app_url }}/api)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Application Home](${{ steps.azure-info.outputs.app_url }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [Health Check](${{ steps.azure-info.outputs.app_url }}/health)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Swagger API Docs](${{ steps.azure-info.outputs.app_url }}/api)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Note:" >> $GITHUB_STEP_SUMMARY
           echo "This workflow only restarts the App Service with the existing Docker image." >> $GITHUB_STEP_SUMMARY

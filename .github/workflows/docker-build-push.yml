@@ -37,28 +37,31 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Setup Terraform (to get ACR info)
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.6.0
-          terraform_wrapper: false
-
-      - name: Terraform Init
-        working-directory: infrastructure/terraform
-        run: terraform init
-
       - name: Get ACR Information
         id: acr-info
-        working-directory: infrastructure/terraform
         run: |
-          ACR_NAME=$(terraform output -raw container_registry_name)
-          ACR_LOGIN_SERVER=$(terraform output -raw container_registry_login_server)
+          RESOURCE_GROUP="medinventory-rg"
+          ENVIRONMENT="${{ inputs.environment }}"
           
-          echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
-          echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+          # Get ACR name from resource group (it should follow the naming pattern)
+          ACR_NAME="medinventoryacr${ENVIRONMENT}"
           
-          echo "ACR Name: $ACR_NAME"
-          echo "ACR Login Server: $ACR_LOGIN_SERVER"
+          echo "Looking for ACR: $ACR_NAME in resource group: $RESOURCE_GROUP"
+          
+          # Verify ACR exists
+          if az acr show --name $ACR_NAME --resource-group $RESOURCE_GROUP &> /dev/null; then
+            ACR_LOGIN_SERVER=$(az acr show --name $ACR_NAME --resource-group $RESOURCE_GROUP --query "loginServer" -o tsv)
+            
+            echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
+            echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+            
+            echo "ACR Name: $ACR_NAME"
+            echo "✅ACR Login Server: $ACR_LOGIN_SERVER"
+          else
+            echo "ERROR: ACR '$ACR_NAME' not found in resource group '$RESOURCE_GROUP'"
+            echo "Please run 'Terraform Create Infrastructure' workflow first"
+            exit 1
+          fi
 
       - name: Install Application Dependencies
         run: |
