@@ -69,8 +69,17 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## Infrastructure Destroyed Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "## 🗑️ Infrastructure Destroyed Successfully" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Environment:** ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "All resources have been deleted." >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Deleted Resources:" >> $GITHUB_STEP_SUMMARY
+          echo "- MySQL Flexible Server" >> $GITHUB_STEP_SUMMARY
+          echo "- Azure Container Registry" >> $GITHUB_STEP_SUMMARY
+          echo "- App Service" >> $GITHUB_STEP_SUMMARY
+          echo "- Service Plan" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔒 Preserved Resources:" >> $GITHUB_STEP_SUMMARY
+          echo "- Resource Group (medinventory-rg)" >> $GITHUB_STEP_SUMMARY
+          echo "- Storage Account (medinventorystorage)" >> $GITHUB_STEP_SUMMARY
+          echo "- Terraform State Container (tfstate)" >> $GITHUB_STEP_SUMMARY

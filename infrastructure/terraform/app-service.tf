@@ -1,7 +1,7 @@
 # Linux Web App
 resource "azurerm_linux_web_app" "main" {
   name                = "${var.project_name}-app-${var.environment}"
-  resource_group_name = azurerm_resource_group.main.name
+  resource_group_name = data.azurerm_resource_group.main.name
   location            = azurerm_service_plan.main.location
   service_plan_id     = azurerm_service_plan.main.id
 
