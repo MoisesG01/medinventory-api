@@ -42,14 +42,19 @@ WORKDIR /app
 # Copy package files
 COPY package*.json yarn.lock ./
 
-# Install ONLY production dependencies using yarn
+# Install production dependencies + Prisma CLI (needed for migrations)
 RUN yarn install --frozen-lockfile --production=true && \
+    yarn add -D prisma && \
     yarn cache clean
 
 # Copy built application and Prisma files
 COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nestjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nestjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+
+# Copy entrypoint script
+COPY --chown=nestjs:nodejs docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
 
 # Switch to non-root user
 USER nestjs
@@ -66,8 +71,8 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
         res.statusCode === 200 ? process.exit(0) : process.exit(1) \
     }).on('error', () => process.exit(1))"
 
-# Use dumb-init for proper signal handling
+# Use dumb-init for proper signal handling and run entrypoint script
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start the application
-CMD ["node", "dist/main.js"]
+# Start the application via entrypoint script (runs migrations first)
+CMD ["./docker-entrypoint.sh"]
