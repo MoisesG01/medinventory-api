@@ -26,10 +26,6 @@ else
   exit 1
 fi
 
-# Generate Prisma Client (in case it's not up to date)
-echo "🔧 Generating Prisma Client..."
-npx prisma generate
-
 # Start the application
 echo "Starting NestJS application..."
 exec node dist/main.js
