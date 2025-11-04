@@ -1,4 +1,10 @@
 terraform {
+  backend "azurerm" {
+    resource_group_name  = "medinventory-rg"
+    storage_account_name = "medinventorystorage"
+    container_name       = "tfstate"
+    key                  = "terraform.tfstate"
+  }
   required_version = ">= 1.0"
   required_providers {
     azurerm = {
@@ -39,4 +45,11 @@ resource "azurerm_storage_account" "main" {
   account_replication_type = "LRS"
 
   tags = var.tags
+}
+
+# Container para o state do Terraform
+resource "azurerm_storage_container" "tfstate" {
+  name                  = "tfstate"
+  storage_account_name  = azurerm_storage_account.main.name
+  container_access_type = "private"
 }

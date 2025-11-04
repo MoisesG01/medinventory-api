@@ -74,13 +74,7 @@ jobs:
           echo "**Environment:** ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY
-          echo "1. Run 'Terraform Start Application' workflow to deploy the app" >> $GITHUB_STEP_SUMMARY
-          echo "2. Check Azure Portal for created resources" >> $GITHUB_STEP_SUMMARY
-          echo "3. Access the application at the URL shown in outputs" >> $GITHUB_STEP_SUMMARY
-
-      - name: Upload Terraform State
-        uses: actions/upload-artifact@v4
-        with:
-          name: terraform-state-${{ inputs.environment }}
-          path: infrastructure/terraform/terraform.tfstate
-          retention-days: 30
+          echo "1. Run 'Build and Push Docker Image' workflow to build the container" >> $GITHUB_STEP_SUMMARY
+          echo "2. Run 'Terraform Start Application' workflow to deploy the app" >> $GITHUB_STEP_SUMMARY
+          echo "3. Check Azure Portal for created resources" >> $GITHUB_STEP_SUMMARY
+          echo "4. Access the application at the URL shown in outputs" >> $GITHUB_STEP_SUMMARY
