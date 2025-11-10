@@ -1,4 +1,10 @@
 terraform {
+  backend "azurerm" {
+    resource_group_name  = "medinventory-rg"
+    storage_account_name = "medinventorystorage"
+    container_name       = "tfstate"
+    key                  = "terraform.tfstate"
+  }
   required_version = ">= 1.0"
   required_providers {
     azurerm = {
@@ -16,27 +22,19 @@ provider "azurerm" {
   features {}
 }
 
-# Resource Group
-resource "azurerm_resource_group" "main" {
-  name     = "${var.project_name}-rg"
-  location = var.location
+# Use existing Resource Group (not managed by Terraform)
+data "azurerm_resource_group" "main" {
+  name = "${var.project_name}-rg"
+}
 
-  tags = var.tags
+# Use existing Storage Account (not managed by Terraform)
+data "azurerm_storage_account" "main" {
+  name                = "${replace(var.project_name, "-", "")}storage"
+  resource_group_name = data.azurerm_resource_group.main.name
 }
 
 # Random password for database
 resource "random_password" "mysql_password" {
   length  = 16
   special = true
-}
-
-# Storage account for logs and data
-resource "azurerm_storage_account" "main" {
-  name                     = "${replace(var.project_name, "-", "")}storage"
-  resource_group_name      = azurerm_resource_group.main.name
-  location                = azurerm_resource_group.main.location
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
-
-  tags = var.tags
 }

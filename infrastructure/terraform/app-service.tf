@@ -1,7 +1,7 @@
 # Linux Web App
 resource "azurerm_linux_web_app" "main" {
   name                = "${var.project_name}-app-${var.environment}"
-  resource_group_name = azurerm_resource_group.main.name
+  resource_group_name = data.azurerm_resource_group.main.name
   location            = azurerm_service_plan.main.location
   service_plan_id     = azurerm_service_plan.main.id
 
@@ -13,7 +13,7 @@ resource "azurerm_linux_web_app" "main" {
     always_on = var.app_service_sku != "F1" # Free tier doesn't support always_on
     
     application_stack {
-      docker_image_name = "${azurerm_container_registry.main.login_server}/${var.project_name}:latest"
+      docker_image_name = "${azurerm_container_registry.main.login_server}/${var.project_name}-api:latest"
     }
 
     container_registry_use_managed_identity = true
