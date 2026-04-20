@@ -30,6 +30,9 @@ import { ExportEquipamentoCsvQueryDto } from './dto/export-equipamento-csv-query
 import { EquipamentoResponseDto } from './dto/equipamento-response.dto';
 import { ExportCsvResponseDto } from './dto/export-csv-response.dto';
 import { StatusOperacional } from '../common/enums/status-operacional.enum';
+import { UserType } from '../common/enums/user-type.enum';
+import { UserTypes } from '../auth/decorators/user-types.decorator';
+import { UserTypesGuard } from '../auth/guards/user-types.guard';
 
 @ApiTags('equipamentos')
 @Controller('equipamentos')
@@ -131,6 +134,8 @@ export class EquipamentosController {
   }
 
   @Get('export/csv')
+  @UseGuards(UserTypesGuard)
+  @UserTypes(UserType.Administrador, UserType.Gestor)
   @ApiOperation({
     summary:
       'Gerar CSV dos equipamentos, enviar ao Azure Blob Storage e obter URL de download (SAS)',
@@ -169,6 +174,11 @@ export class EquipamentosController {
   @ApiResponse({
     status: 401,
     description: 'Token JWT inválido ou expirado',
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Acesso negado (apenas Administrador e Gestor podem exportar CSV)',
   })
   @ApiResponse({
     status: 503,

@@ -377,6 +377,10 @@ curl -X PATCH http://localhost:3000/equipamentos/123e4567-e89b-12d3-a456-4266141
 
 Gera o CSV (UTF-8 com BOM, compatível com Excel), envia para um **container em uma Storage Account dedicada** (provisionada pelo Terraform, separada da conta usada para `tfstate`) e responde com **JSON** contendo uma URL temporária (SAS somente leitura) para o cliente baixar o arquivo **diretamente do Azure Blob**.
 
+#### Permissão (RBAC na API)
+
+Apenas usuários do tipo **`Administrador`** e **`Gestor`** têm acesso a este endpoint. Caso contrário, a API retorna **403**.
+
 Filtros opcionais na query (mesmo significado do listar): `nome`, `tipo`, `setorAtual`, `statusOperacional`. **Sem paginação** — exporta todos os registros que atendem ao filtro.
 
 **Resposta 200 (JSON):**
