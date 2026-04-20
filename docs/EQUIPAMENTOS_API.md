@@ -371,6 +371,105 @@ curl -X PATCH http://localhost:3000/equipamentos/123e4567-e89b-12d3-a456-4266141
   }'
 ```
 
+### Exportar equipamentos (CSV via Azure Blob Storage)
+
+**GET** `/equipamentos/export/csv`
+
+Gera o CSV (UTF-8 com BOM, compatível com Excel), envia para um **container em uma Storage Account dedicada** (provisionada pelo Terraform, separada da conta usada para `tfstate`) e responde com **JSON** contendo uma URL temporária (SAS somente leitura) para o cliente baixar o arquivo **diretamente do Azure Blob**.
+
+Filtros opcionais na query (mesmo significado do listar): `nome`, `tipo`, `setorAtual`, `statusOperacional`. **Sem paginação** — exporta todos os registros que atendem ao filtro.
+
+**Resposta 200 (JSON):**
+
+| Campo | Descrição |
+|--------|------------|
+| `downloadUrl` | URL HTTPS do blob + SAS de leitura (expira em `expiresOn`) |
+| `expiresOn` | ISO 8601 — após esse instante a URL deixa de funcionar |
+| `blobName` | Caminho do objeto no container (ex.: `equipamentos/{uuid}.csv`) |
+| `fileName` | Nome sugerido para salvar localmente (ex.: `equipamentos-AAAA-MM-DD.csv`) |
+
+**503** — armazenamento não configurado ou indisponível (variáveis de ambiente / permissões MI).
+
+**Configuração (API):**
+
+- **Azure (App Service):** Managed Identity + variáveis `AZURE_STORAGE_ACCOUNT_NAME`, `AZURE_STORAGE_CSV_CONTAINER` (e opcionalmente `AZURE_STORAGE_SAS_TTL_MINUTES`, `AZURE_STORAGE_BLOB_ENDPOINT`).
+- **Local:** `AZURE_STORAGE_CONNECTION_STRING` apontando para a storage de exportação (ou Azurite).
+
+#### Exemplo: obter URL e baixar com curl
+
+```bash
+# 1) Obter JSON com SAS (substitua TOKEN)
+curl -sS "http://localhost:3000/equipamentos/export/csv" \
+  -H "Authorization: Bearer TOKEN" \
+  -H "Accept: application/json" | tee export.json
+
+# 2) Baixar do Azure usando a URL retornada (sem header Authorization na URL SAS)
+DOWNLOAD_URL=$(jq -r .downloadUrl export.json)
+curl -L -o equipamentos.csv "$DOWNLOAD_URL"
+```
+
+#### Integração no frontend (JSON + download do blob)
+
+```typescript
+async function downloadEquipamentosCsv(
+  apiBase: string,
+  token: string,
+  params?: Record<string, string>,
+) {
+  const qs = params
+    ? '?' + new URLSearchParams(params).toString()
+    : '';
+  const res = await fetch(`${apiBase}/equipamentos/export/csv${qs}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json',
+    },
+  });
+  if (!res.ok) {
+    let msg = `Falha ao exportar (${res.status})`;
+    try {
+      const err = await res.json();
+      if (err?.message)
+        msg = Array.isArray(err.message) ? err.message.join(', ') : err.message;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(msg);
+  }
+  const { downloadUrl, fileName } = await res.json();
+  const fileRes = await fetch(downloadUrl);
+  if (!fileRes.ok) {
+    throw new Error(`Falha ao baixar CSV do storage (${fileRes.status})`);
+  }
+  const blob = await fileRes.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+```
+
+#### Axios
+
+```typescript
+import axios from 'axios';
+
+const meta = await axios.get(`${apiBase}/equipamentos/export/csv`, {
+  headers: { Authorization: `Bearer ${token}` },
+  params: { nome: 'Monitor' },
+});
+const { downloadUrl, fileName } = meta.data;
+const fileRes = await axios.get(downloadUrl, { responseType: 'blob' });
+const url = URL.createObjectURL(fileRes.data);
+const a = document.createElement('a');
+a.href = url;
+a.download = fileName;
+a.click();
+URL.revokeObjectURL(url);
+```
+
 ---
 
 ## Documentação Swagger

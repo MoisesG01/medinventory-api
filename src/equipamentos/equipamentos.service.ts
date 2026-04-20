@@ -3,15 +3,87 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { Equipamento, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEquipamentoDto } from './dto/create-equipamento.dto';
 import { UpdateEquipamentoDto } from './dto/update-equipamento.dto';
 import { FilterEquipamentoDto } from './dto/filter-equipamento.dto';
+import { ExportEquipamentoCsvQueryDto } from './dto/export-equipamento-csv-query.dto';
+import { ExportCsvResponseDto } from './dto/export-csv-response.dto';
 import { StatusOperacional } from '../common/enums/status-operacional.enum';
+import { BlobCsvService } from '../storage/blob-csv.service';
+import { randomUUID } from 'crypto';
+import { RedisCacheService } from '../cache/redis-cache.service';
+
+const EQUIPAMENTO_CACHE_TTL_SECONDS = 60 * 60 * 12; // 12 horas
+
+type EquipamentoFilterFields = {
+  nome?: string;
+  tipo?: string;
+  setorAtual?: string;
+  statusOperacional?: StatusOperacional;
+};
+
+function escapeCsvField(value: string | number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  const s = String(value);
+  if (/[",\r\n]/.test(s)) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+
+function formatDateOnlyUtc(value: Date | null | undefined): string {
+  if (!value) {
+    return '';
+  }
+  return value.toISOString().slice(0, 10);
+}
+
+function formatDateTimeUtc(value: Date | null | undefined): string {
+  if (!value) {
+    return '';
+  }
+  return value.toISOString().replace(/\.\d{3}Z$/, 'Z');
+}
 
 @Injectable()
 export class EquipamentosService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly blobCsvService: BlobCsvService,
+    private readonly cache: RedisCacheService,
+  ) {}
+
+  private cacheKeyForEquipamento(id: string) {
+    return `equipamentos:${id}`;
+  }
+
+  private buildWhereFromFilters(
+    filters?: EquipamentoFilterFields,
+  ): Prisma.EquipamentoWhereInput {
+    const where: Prisma.EquipamentoWhereInput = {};
+
+    if (filters?.nome) {
+      where.nome = { contains: filters.nome };
+    }
+
+    if (filters?.tipo) {
+      where.tipo = { contains: filters.tipo };
+    }
+
+    if (filters?.setorAtual) {
+      where.setorAtual = { contains: filters.setorAtual };
+    }
+
+    if (filters?.statusOperacional) {
+      where.statusOperacional = filters.statusOperacional;
+    }
+
+    return where;
+  }
 
   async create(createEquipamentoDto: CreateEquipamentoDto) {
     // Verificar se userId existe (se fornecido)
@@ -83,30 +155,7 @@ export class EquipamentosService {
     const limit = filters?.limit || 10;
     const skip = (page - 1) * limit;
 
-    // Construir filtros para a query
-    const where: any = {};
-
-    if (filters?.nome) {
-      where.nome = {
-        contains: filters.nome,
-      };
-    }
-
-    if (filters?.tipo) {
-      where.tipo = {
-        contains: filters.tipo,
-      };
-    }
-
-    if (filters?.setorAtual) {
-      where.setorAtual = {
-        contains: filters.setorAtual,
-      };
-    }
-
-    if (filters?.statusOperacional) {
-      where.statusOperacional = filters.statusOperacional;
-    }
+    const where = this.buildWhereFromFilters(filters);
 
     // Buscar equipamentos com paginação
     const [equipamentos, total] = await Promise.all([
@@ -152,7 +201,110 @@ export class EquipamentosService {
     };
   }
 
+  private buildEquipamentosCsvBuffer(equipamentos: Equipamento[]): Buffer {
+    const headers = [
+      'ID',
+      'Nome',
+      'Tipo',
+      'Fabricante',
+      'Modelo',
+      'Número de série',
+      'Código patrimonial',
+      'Setor atual',
+      'Status operacional',
+      'Data de aquisição',
+      'Valor de aquisição',
+      'Data fim da garantia',
+      'Vida útil estimada (anos)',
+      'Registro ANVISA',
+      'Classe de risco',
+      'Data última manutenção',
+      'Data próxima manutenção',
+      'Responsável técnico',
+      'Criticidade',
+      'Observações',
+      'ID usuário responsável',
+      'Criado em (UTC)',
+      'Atualizado em (UTC)',
+    ];
+
+    const lines: string[] = [
+      headers.map((h) => escapeCsvField(h)).join(','),
+      ...equipamentos.map((e) =>
+        [
+          escapeCsvField(e.id),
+          escapeCsvField(e.nome),
+          escapeCsvField(e.tipo),
+          escapeCsvField(e.fabricante),
+          escapeCsvField(e.modelo),
+          escapeCsvField(e.numeroSerie),
+          escapeCsvField(e.codigoPatrimonial),
+          escapeCsvField(e.setorAtual),
+          escapeCsvField(e.statusOperacional),
+          escapeCsvField(formatDateOnlyUtc(e.dataAquisicao)),
+          escapeCsvField(
+            e.valorAquisicao === null || e.valorAquisicao === undefined
+              ? ''
+              : e.valorAquisicao,
+          ),
+          escapeCsvField(formatDateOnlyUtc(e.dataFimGarantia)),
+          escapeCsvField(
+            e.vidaUtilEstimativa === null ||
+              e.vidaUtilEstimativa === undefined
+              ? ''
+              : e.vidaUtilEstimativa,
+          ),
+          escapeCsvField(e.registroAnvisa),
+          escapeCsvField(e.classeRisco),
+          escapeCsvField(formatDateOnlyUtc(e.dataUltimaManutencao)),
+          escapeCsvField(formatDateOnlyUtc(e.dataProximaManutencao)),
+          escapeCsvField(e.responsavelTecnico),
+          escapeCsvField(e.criticidade),
+          escapeCsvField(e.observacoes),
+          escapeCsvField(e.userId),
+          escapeCsvField(formatDateTimeUtc(e.createdAt)),
+          escapeCsvField(formatDateTimeUtc(e.updatedAt)),
+        ].join(','),
+      ),
+    ];
+
+    const body = lines.join('\r\n');
+    return Buffer.from(`\uFEFF${body}`, 'utf-8');
+  }
+
+  async exportCsvToBlob(
+    filters?: ExportEquipamentoCsvQueryDto,
+  ): Promise<ExportCsvResponseDto> {
+    const where = this.buildWhereFromFilters(filters);
+
+    const equipamentos = await this.prisma.equipamento.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const buffer = this.buildEquipamentosCsvBuffer(equipamentos);
+    const blobName = `equipamentos/${randomUUID()}.csv`;
+    const { downloadUrl, expiresOn, blobName: storedName } =
+      await this.blobCsvService.uploadCsvAndGetReadSas(buffer, blobName);
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const fileName = `equipamentos-${dateStr}.csv`;
+
+    return {
+      downloadUrl,
+      expiresOn: expiresOn.toISOString(),
+      blobName: storedName,
+      fileName,
+    };
+  }
+
   async findOne(id: string) {
+    const cacheKey = this.cacheKeyForEquipamento(id);
+    const cached = await this.cache.getJson<any>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const equipamento = await this.prisma.equipamento.findUnique({
       where: { id },
       include: {
@@ -173,10 +325,13 @@ export class EquipamentosService {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { user, ...result } = equipamento;
-    return {
+    const payload = {
       ...result,
       userId: equipamento.userId,
     };
+
+    await this.cache.setJson(cacheKey, payload, EQUIPAMENTO_CACHE_TTL_SECONDS);
+    return payload;
   }
 
   async update(id: string, updateEquipamentoDto: UpdateEquipamentoDto) {
@@ -288,10 +443,13 @@ export class EquipamentosService {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { user, ...result } = updatedEquipamento;
-    return {
+    const payload = {
       ...result,
       userId: updatedEquipamento.userId,
     };
+
+    await this.cache.del(this.cacheKeyForEquipamento(id));
+    return payload;
   }
 
   async updateStatus(id: string, status: StatusOperacional) {
@@ -321,10 +479,13 @@ export class EquipamentosService {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { user, ...result } = updatedEquipamento;
-    return {
+    const payload = {
       ...result,
       userId: updatedEquipamento.userId,
     };
+
+    await this.cache.del(this.cacheKeyForEquipamento(id));
+    return payload;
   }
 
   async remove(id: string) {
@@ -341,6 +502,7 @@ export class EquipamentosService {
       where: { id },
     });
 
+    await this.cache.del(this.cacheKeyForEquipamento(id));
     return { message: 'Equipamento removido com sucesso' };
   }
 }
