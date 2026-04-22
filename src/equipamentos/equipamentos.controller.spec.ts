@@ -5,6 +5,7 @@ import { CreateEquipamentoDto } from './dto/create-equipamento.dto';
 import { UpdateEquipamentoDto } from './dto/update-equipamento.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { FilterEquipamentoDto } from './dto/filter-equipamento.dto';
+import { ExportEquipamentoCsvQueryDto } from './dto/export-equipamento-csv-query.dto';
 import { StatusOperacional } from '../common/enums/status-operacional.enum';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 
@@ -15,6 +16,7 @@ describe('EquipamentosController', () => {
   const mockEquipamentosService = {
     create: jest.fn(),
     findAll: jest.fn(),
+    exportCsvToBlob: jest.fn(),
     findOne: jest.fn(),
     update: jest.fn(),
     updateStatus: jest.fn(),
@@ -104,6 +106,41 @@ describe('EquipamentosController', () => {
       await expect(controller.create(createDtoWithUserId)).rejects.toThrow(
         'Usuário responsável não encontrado',
       );
+    });
+  });
+
+  describe('exportCsv', () => {
+    it('should return export payload and call service with query', async () => {
+      const payload = {
+        downloadUrl: 'https://acct.blob.core.windows.net/c/x.csv?sv=1',
+        expiresOn: '2030-01-01T00:00:00.000Z',
+        blobName: 'equipamentos/x.csv',
+        fileName: 'equipamentos-2030-01-01.csv',
+      };
+      mockEquipamentosService.exportCsvToBlob.mockResolvedValue(payload);
+
+      const query: ExportEquipamentoCsvQueryDto = {
+        nome: 'Monitor',
+      };
+
+      const result = await controller.exportCsv(query);
+
+      expect(service.exportCsvToBlob).toHaveBeenCalledWith(query);
+      expect(result).toEqual(payload);
+    });
+
+    it('should call service without query when undefined', async () => {
+      const payload = {
+        downloadUrl: 'https://acct.blob.core.windows.net/c/y.csv',
+        expiresOn: '2030-01-01T00:00:00.000Z',
+        blobName: 'equipamentos/y.csv',
+        fileName: 'equipamentos-2030-01-01.csv',
+      };
+      mockEquipamentosService.exportCsvToBlob.mockResolvedValue(payload);
+
+      await controller.exportCsv(undefined);
+
+      expect(service.exportCsvToBlob).toHaveBeenCalledWith(undefined);
     });
   });
 

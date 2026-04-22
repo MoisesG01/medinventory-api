@@ -43,6 +43,17 @@ resource "azurerm_linux_web_app" "main" {
     # Enable logging
     WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
     WEBSITES_CONTAINER_START_TIME_LIMIT = "1800"
+
+    # CSV exports (Azure Blob — conta dedicada; autenticação via Managed Identity)
+    AZURE_STORAGE_ACCOUNT_NAME    = azurerm_storage_account.csv_exports.name
+    AZURE_STORAGE_CSV_CONTAINER     = azurerm_storage_container.csv_exports.name
+    AZURE_STORAGE_SAS_TTL_MINUTES   = "60"
+
+    # Azure Cache for Redis (TLS — porta 6380)
+    REDIS_HOST         = azurerm_redis_cache.main.hostname
+    REDIS_PORT         = tostring(azurerm_redis_cache.main.ssl_port)
+    REDIS_TLS          = "true"
+    REDIS_URL          = format("rediss://:%s@%s:%s/0", urlencode(azurerm_redis_cache.main.primary_access_key), azurerm_redis_cache.main.hostname, azurerm_redis_cache.main.ssl_port)
   }
 
   logs {

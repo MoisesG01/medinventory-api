@@ -7,10 +7,20 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/user.dto';
 import { UpdateUserDto } from './dto/user.dto';
 import * as bcrypt from 'bcryptjs';
+import { RedisCacheService } from '../cache/redis-cache.service';
+
+const USER_CACHE_TTL_SECONDS = 60 * 60 * 12; // 12 horas
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly cache: RedisCacheService,
+  ) {}
+
+  private cacheKeyForUser(id: string) {
+    return `users:${id}`;
+  }
 
   async create(createUserDto: CreateUserDto) {
     // Verificar se username já existe
@@ -62,6 +72,12 @@ export class UserService {
   }
 
   async findOne(id: string) {
+    const cacheKey = this.cacheKeyForUser(id);
+    const cached = await this.cache.getJson<any>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id },
       select: {
@@ -79,6 +95,7 @@ export class UserService {
       throw new NotFoundException('Usuário não encontrado');
     }
 
+    await this.cache.setJson(cacheKey, user, USER_CACHE_TTL_SECONDS);
     return user;
   }
 
@@ -137,6 +154,7 @@ export class UserService {
       },
     });
 
+    await this.cache.del(this.cacheKeyForUser(id));
     return updatedUser;
   }
 
@@ -153,6 +171,7 @@ export class UserService {
       where: { id },
     });
 
+    await this.cache.del(this.cacheKeyForUser(id));
     return { message: 'Usuário removido com sucesso' };
   }
 

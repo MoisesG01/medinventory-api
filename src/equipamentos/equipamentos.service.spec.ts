@@ -1,14 +1,27 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EquipamentosService } from './equipamentos.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { BlobCsvService } from '../storage/blob-csv.service';
+import { RedisCacheService } from '../cache/redis-cache.service';
 import { CreateEquipamentoDto } from './dto/create-equipamento.dto';
 import { UpdateEquipamentoDto } from './dto/update-equipamento.dto';
 import { FilterEquipamentoDto } from './dto/filter-equipamento.dto';
+import { ExportEquipamentoCsvQueryDto } from './dto/export-equipamento-csv-query.dto';
 import { StatusOperacional } from '../common/enums/status-operacional.enum';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 
 describe('EquipamentosService', () => {
   let service: EquipamentosService;
+
+  const mockBlobCsvService = {
+    uploadCsvAndGetReadSas: jest.fn(),
+  };
+
+  const mockCache = {
+    getJson: jest.fn(),
+    setJson: jest.fn(),
+    del: jest.fn(),
+  };
 
   const mockPrismaService = {
     equipamento: {
@@ -63,6 +76,14 @@ describe('EquipamentosService', () => {
         {
           provide: PrismaService,
           useValue: mockPrismaService,
+        },
+        {
+          provide: BlobCsvService,
+          useValue: mockBlobCsvService,
+        },
+        {
+          provide: RedisCacheService,
+          useValue: mockCache,
         },
       ],
     }).compile();
@@ -276,8 +297,94 @@ describe('EquipamentosService', () => {
     });
   });
 
+  describe('exportCsvToBlob', () => {
+    beforeEach(() => {
+      mockBlobCsvService.uploadCsvAndGetReadSas.mockResolvedValue({
+        downloadUrl: 'https://example.blob.core.windows.net/c/e.csv?sas=1',
+        expiresOn: new Date('2030-01-01T00:00:00.000Z'),
+        blobName: 'equipamentos/test-uuid.csv',
+      });
+    });
+
+    it('should upload CSV with BOM and header when there are no equipamentos', async () => {
+      mockPrismaService.equipamento.findMany.mockResolvedValue([]);
+
+      const result = await service.exportCsvToBlob();
+
+      expect(mockPrismaService.equipamento.findMany).toHaveBeenCalledWith({
+        where: {},
+        orderBy: { createdAt: 'desc' },
+      });
+
+      expect(mockBlobCsvService.uploadCsvAndGetReadSas).toHaveBeenCalled();
+      const uploadBuffer = mockBlobCsvService.uploadCsvAndGetReadSas.mock
+        .calls[0][0] as Buffer;
+      const text = uploadBuffer.toString('utf-8');
+      expect(text.charCodeAt(0)).toBe(0xfeff);
+      expect(text).toContain('ID');
+      expect(text).toContain('Nome');
+      expect(text).toContain('Status operacional');
+      expect(result.downloadUrl).toContain('example.blob');
+      expect(result.blobName).toBe('equipamentos/test-uuid.csv');
+      expect(result.fileName).toMatch(/^equipamentos-\d{4}-\d{2}-\d{2}\.csv$/);
+    });
+
+    it('should include data rows with filters and no pagination in uploaded buffer', async () => {
+      const filters: ExportEquipamentoCsvQueryDto = {
+        nome: 'Monitor',
+        statusOperacional: StatusOperacional.EM_USO,
+      };
+
+      mockPrismaService.equipamento.findMany.mockResolvedValue([
+        mockEquipamento,
+      ]);
+
+      await service.exportCsvToBlob(filters);
+
+      expect(mockPrismaService.equipamento.findMany).toHaveBeenCalledWith({
+        where: {
+          nome: { contains: 'Monitor' },
+          statusOperacional: StatusOperacional.EM_USO,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      const uploadBuffer = mockBlobCsvService.uploadCsvAndGetReadSas.mock
+        .calls[0][0] as Buffer;
+      const text = uploadBuffer.toString('utf-8');
+      expect(text).toContain(mockEquipamento.id);
+      expect(text).toContain(mockEquipamento.nome);
+      expect(text).toContain(StatusOperacional.EM_USO);
+    });
+
+    it('should escape fields containing commas in uploaded buffer', async () => {
+      const withComma = {
+        ...mockEquipamento,
+        observacoes: 'Obs com, vírgula',
+      };
+      mockPrismaService.equipamento.findMany.mockResolvedValue([withComma]);
+
+      await service.exportCsvToBlob();
+      const uploadBuffer = mockBlobCsvService.uploadCsvAndGetReadSas.mock
+        .calls[0][0] as Buffer;
+      const text = uploadBuffer.toString('utf-8');
+      expect(text).toContain('"Obs com, vírgula"');
+    });
+  });
+
   describe('findOne', () => {
+    it('should return cached equipamento on cache hit', async () => {
+      const cached = { id: mockEquipamento.id, nome: mockEquipamento.nome };
+      mockCache.getJson.mockResolvedValue(cached);
+
+      const result = await service.findOne(mockEquipamento.id);
+
+      expect(mockPrismaService.equipamento.findUnique).not.toHaveBeenCalled();
+      expect(result).toEqual(cached);
+    });
+
     it('should return equipamento by id', async () => {
+      mockCache.getJson.mockResolvedValue(null);
       mockPrismaService.equipamento.findUnique.mockResolvedValue(
         mockEquipamento,
       );
@@ -323,6 +430,7 @@ describe('EquipamentosService', () => {
         createdAt: mockEquipamento.createdAt,
         updatedAt: mockEquipamento.updatedAt,
       });
+      expect(mockCache.setJson).toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when equipamento not found', async () => {
@@ -382,6 +490,9 @@ describe('EquipamentosService', () => {
 
       expect(result.nome).toBe('Monitor Atualizado');
       expect(result.statusOperacional).toBe(StatusOperacional.EM_MANUTENCAO);
+      expect(mockCache.del).toHaveBeenCalledWith(
+        `equipamentos:${mockEquipamento.id}`,
+      );
     });
 
     it('should update equipamento with optional fields', async () => {
@@ -502,6 +613,9 @@ describe('EquipamentosService', () => {
       });
 
       expect(result.statusOperacional).toBe(StatusOperacional.EM_MANUTENCAO);
+      expect(mockCache.del).toHaveBeenCalledWith(
+        `equipamentos:${mockEquipamento.id}`,
+      );
     });
 
     it('should throw NotFoundException when equipamento not found', async () => {
@@ -530,6 +644,9 @@ describe('EquipamentosService', () => {
       });
 
       expect(result).toEqual({ message: 'Equipamento removido com sucesso' });
+      expect(mockCache.del).toHaveBeenCalledWith(
+        `equipamentos:${mockEquipamento.id}`,
+      );
     });
 
     it('should throw NotFoundException when equipamento not found', async () => {

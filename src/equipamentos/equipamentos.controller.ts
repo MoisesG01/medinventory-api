@@ -26,8 +26,13 @@ import { CreateEquipamentoDto } from './dto/create-equipamento.dto';
 import { UpdateEquipamentoDto } from './dto/update-equipamento.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { FilterEquipamentoDto } from './dto/filter-equipamento.dto';
+import { ExportEquipamentoCsvQueryDto } from './dto/export-equipamento-csv-query.dto';
 import { EquipamentoResponseDto } from './dto/equipamento-response.dto';
+import { ExportCsvResponseDto } from './dto/export-csv-response.dto';
 import { StatusOperacional } from '../common/enums/status-operacional.enum';
+import { UserType } from '../common/enums/user-type.enum';
+import { UserTypes } from '../auth/decorators/user-types.decorator';
+import { UserTypesGuard } from '../auth/guards/user-types.guard';
 
 @ApiTags('equipamentos')
 @Controller('equipamentos')
@@ -126,6 +131,61 @@ export class EquipamentosController {
   })
   async findAll(@Query() filters?: FilterEquipamentoDto) {
     return this.equipamentosService.findAll(filters);
+  }
+
+  @Get('export/csv')
+  @UseGuards(UserTypesGuard)
+  @UserTypes(UserType.Administrador, UserType.Gestor)
+  @ApiOperation({
+    summary:
+      'Gerar CSV dos equipamentos, enviar ao Azure Blob Storage e obter URL de download (SAS)',
+  })
+  @ApiQuery({
+    name: 'nome',
+    required: false,
+    description: 'Filtrar por nome do equipamento',
+    example: 'Monitor',
+  })
+  @ApiQuery({
+    name: 'tipo',
+    required: false,
+    description: 'Filtrar por tipo do equipamento',
+    example: 'Monitor de Sinais Vitais',
+  })
+  @ApiQuery({
+    name: 'setorAtual',
+    required: false,
+    description: 'Filtrar por setor atual',
+    example: 'UTI',
+  })
+  @ApiQuery({
+    name: 'statusOperacional',
+    required: false,
+    enum: StatusOperacional,
+    description: 'Filtrar por status operacional',
+    example: StatusOperacional.EM_USO,
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Metadados e URL temporária (SAS) para download direto do blob no Azure Storage',
+    type: ExportCsvResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Token JWT inválido ou expirado',
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Acesso negado (apenas Administrador e Gestor podem exportar CSV)',
+  })
+  @ApiResponse({
+    status: 503,
+    description: 'Armazenamento de exportação não configurado ou indisponível',
+  })
+  async exportCsv(@Query() query?: ExportEquipamentoCsvQueryDto) {
+    return this.equipamentosService.exportCsvToBlob(query);
   }
 
   @Get(':id')

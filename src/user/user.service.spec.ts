@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserType } from '../common/enums/user-type.enum';
 import * as bcrypt from 'bcryptjs';
+import { RedisCacheService } from '../cache/redis-cache.service';
 
 // Mock do bcrypt
 jest.mock('bcryptjs', () => ({
@@ -24,6 +25,11 @@ type MockPrismaService = {
 describe('UserService', () => {
   let service: UserService;
   let prismaService: MockPrismaService;
+  const mockCache = {
+    getJson: jest.fn(),
+    setJson: jest.fn(),
+    del: jest.fn(),
+  };
 
   const mockUser = {
     id: '123e4567-e89b-12d3-a456-426614174000',
@@ -61,6 +67,10 @@ describe('UserService', () => {
         {
           provide: PrismaService,
           useValue: mockPrismaService,
+        },
+        {
+          provide: RedisCacheService,
+          useValue: mockCache,
         },
       ],
     }).compile();
@@ -308,7 +318,26 @@ describe('UserService', () => {
   });
 
   describe('findOne', () => {
+    it('should return cached user on cache hit', async () => {
+      const cached = {
+        id: mockUser.id,
+        nome: mockUser.nome,
+        username: mockUser.username,
+        email: mockUser.email,
+        tipo: mockUser.tipo,
+        createdAt: mockUser.createdAt,
+        updatedAt: mockUser.updatedAt,
+      };
+      mockCache.getJson.mockResolvedValue(cached);
+
+      const result = await service.findOne(mockUser.id);
+
+      expect(prismaService.user.findUnique).not.toHaveBeenCalled();
+      expect(result).toEqual(cached);
+    });
+
     it('should return user when found by id', async () => {
+      mockCache.getJson.mockResolvedValue(null);
       prismaService.user.findUnique.mockResolvedValue(mockUser);
 
       const result = await service.findOne('123e4567-e89b-12d3-a456-426614174000');
@@ -325,6 +354,7 @@ describe('UserService', () => {
           updatedAt: true,
         },
       });
+      expect(mockCache.setJson).toHaveBeenCalled();
       expect(result).toEqual(mockUser);
     });
 
@@ -386,6 +416,9 @@ describe('UserService', () => {
         },
       });
       expect(result).toEqual(updatedUser);
+      expect(mockCache.del).toHaveBeenCalledWith(
+        `users:123e4567-e89b-12d3-a456-426614174000`,
+      );
     });
 
     it('should throw NotFoundException when user not found', async () => {
@@ -467,6 +500,9 @@ describe('UserService', () => {
         where: { id: '123e4567-e89b-12d3-a456-426614174000' },
       });
       expect(result).toEqual({ message: 'Usuário removido com sucesso' });
+      expect(mockCache.del).toHaveBeenCalledWith(
+        `users:123e4567-e89b-12d3-a456-426614174000`,
+      );
     });
 
     it('should throw NotFoundException when user not found', async () => {

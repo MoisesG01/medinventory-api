@@ -122,12 +122,12 @@ jobs:
           RG="${{ steps.azure-info.outputs.resource_group }}"
           ACR_LOGIN_SERVER="${{ steps.azure-info.outputs.acr_login_server }}"
           
-          # Configure container image
+          # Configure container image (use --container-image-name; avoid invalid DOCKER|/registry refs)
           az webapp config container set \
             --name $APP_NAME \
             --resource-group $RG \
-            --docker-custom-image-name "${ACR_LOGIN_SERVER}/medinventory-api:latest" \
-            --docker-registry-server-url "https://${ACR_LOGIN_SERVER}"
+            --container-image-name "${ACR_LOGIN_SERVER}/medinventory-api:latest" \
+            --container-registry-url "https://${ACR_LOGIN_SERVER}"
           
           echo "Container image configured"
 

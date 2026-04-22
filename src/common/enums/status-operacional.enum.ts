@@ -3,5 +3,5 @@ export enum StatusOperacional {
   EM_USO = 'EM_USO',
   EM_MANUTENCAO = 'EM_MANUTENCAO',
   INATIVO = 'INATIVO',
-  SUCATEADO = 'SUCATEADO',
+  SUCATEADO = 'SUCATEADO', // Equipamento descartado
 }

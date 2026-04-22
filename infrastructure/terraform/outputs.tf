@@ -63,3 +63,40 @@ output "app_service_url" {
   description = "App Service URL"
   value       = "https://${azurerm_linux_web_app.main.default_hostname}"
 }
+
+output "csv_exports_storage_account_name" {
+  description = "Storage account name for generated equipment CSV files (not Terraform state)"
+  value       = azurerm_storage_account.csv_exports.name
+}
+
+output "csv_exports_blob_endpoint" {
+  description = "Primary blob endpoint for CSV export storage"
+  value       = azurerm_storage_account.csv_exports.primary_blob_endpoint
+}
+
+output "csv_exports_container_name" {
+  description = "Blob container name for CSV exports"
+  value       = azurerm_storage_container.csv_exports.name
+}
+
+output "redis_hostname" {
+  description = "Azure Cache for Redis — hostname (SSL porta 6380)"
+  value       = azurerm_redis_cache.main.hostname
+}
+
+output "redis_port" {
+  description = "Porta SSL do Redis (6380)"
+  value       = azurerm_redis_cache.main.ssl_port
+}
+
+output "redis_primary_access_key" {
+  description = "Chave primária do Redis (sensível)"
+  value       = azurerm_redis_cache.main.primary_access_key
+  sensitive   = true
+}
+
+output "redis_connection_string" {
+  description = "URL estilo rediss:// para clientes que aceitam connection string (chave na URL)"
+  value       = format("rediss://:%s@%s:%s/0", urlencode(azurerm_redis_cache.main.primary_access_key), azurerm_redis_cache.main.hostname, azurerm_redis_cache.main.ssl_port)
+  sensitive   = true
+}
