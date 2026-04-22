@@ -6,6 +6,13 @@ RUN apk update && apk upgrade && \
     apk add --no-cache dumb-init && \
     rm -rf /var/cache/apk/*
 
+# npm bundles picomatch <4.0.4 (CVE-2026-33671 ReDoS); replace until official node image updates.
+ARG PICOMATCH_VERSION=4.0.4
+RUN NPM_PIC="/usr/local/lib/node_modules/npm/node_modules/picomatch" && \
+    rm -rf "$NPM_PIC" && mkdir -p "$NPM_PIC" && \
+    wget -qO- "https://registry.npmjs.org/picomatch/-/picomatch-${PICOMATCH_VERSION}.tgz" \
+      | tar xz -C "$NPM_PIC" --strip-components=1
+
 WORKDIR /app
 
 # Copy package files (include yarn.lock for consistency)
@@ -33,6 +40,12 @@ RUN apk update && apk upgrade && \
     apk add --no-cache dumb-init && \
     rm -rf /var/cache/apk/*
 
+ARG PICOMATCH_VERSION=4.0.4
+RUN NPM_PIC="/usr/local/lib/node_modules/npm/node_modules/picomatch" && \
+    rm -rf "$NPM_PIC" && mkdir -p "$NPM_PIC" && \
+    wget -qO- "https://registry.npmjs.org/picomatch/-/picomatch-${PICOMATCH_VERSION}.tgz" \
+      | tar xz -C "$NPM_PIC" --strip-components=1
+
 # Create app user (Alpine syntax)
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nestjs -u 1001 -G nodejs
@@ -42,9 +55,10 @@ WORKDIR /app
 # Copy package files
 COPY package*.json yarn.lock ./
 
-# Install production dependencies + Prisma CLI (needed for migrations)
+# Install production dependencies + Prisma CLI (needed for migrations).
+# Pin Prisma to the same major as package.json — Prisma 7+ breaks migrate with this schema.
 RUN yarn install --frozen-lockfile --production=true && \
-    yarn add -D prisma && \
+    yarn add -D prisma@6.9.0 && \
     yarn cache clean
 
 # Copy built application and Prisma files
@@ -59,20 +73,19 @@ RUN chmod +x docker-entrypoint.sh
 # Switch to non-root user
 USER nestjs
 
-# Expose port
-EXPOSE 3000
+# App Service injects PORT=8080; default the image the same way for health checks.
+EXPOSE 8080
 
-# Environment variables
 ENV NODE_ENV=production
+ENV PORT=8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:3000/health', (res) => { \
+# Health check (must match PORT — Azure uses 8080)
+HEALTHCHECK --interval=30s --timeout=3s --start-period=90s --retries=3 \
+    CMD node -e "require('http').get('http://127.0.0.1:'+(process.env.PORT||8080)+'/health', (res) => { \
         res.statusCode === 200 ? process.exit(0) : process.exit(1) \
     }).on('error', () => process.exit(1))"
 
-# Use dumb-init for proper signal handling and run entrypoint script
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start the application via entrypoint script (runs migrations first)
-CMD ["./docker-entrypoint.sh"]
+# Invoke via /bin/sh so CRLF or missing +x on the script cannot break startup (Alpine/Linux).
+CMD ["/bin/sh", "/app/docker-entrypoint.sh"]
