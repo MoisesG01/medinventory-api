@@ -149,6 +149,18 @@ jobs:
         run: |
           set -euo pipefail
           echo "Deploying image to AKS..."
+          if ! kubectl get ns medinventory > /dev/null 2>&1; then
+            echo "Namespace 'medinventory' not found. Skipping AKS deploy step."
+            echo "Run 'Terraform Start Application' workflow first to create in-cluster resources."
+            exit 0
+          fi
+
+          if ! kubectl -n medinventory get deployment medinventory-api > /dev/null 2>&1; then
+            echo "Deployment 'medinventory-api' not found in namespace 'medinventory'. Skipping."
+            echo "Run 'Terraform Start Application' workflow first to create the deployment."
+            exit 0
+          fi
+
           kubectl -n medinventory set image deployment/medinventory-api api="${{ steps.image-details.outputs.image_full_name }}"
           kubectl -n medinventory rollout status deployment/medinventory-api --timeout=5m
 
@@ -163,8 +175,8 @@ jobs:
           echo "**Registry:** ${{ steps.acr-info.outputs.acr_login_server }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY
-          echo "1. App foi implantada no AKS (deployment medinventory-api)" >> $GITHUB_STEP_SUMMARY
-          echo "2. Verifique o serviço LoadBalancer e o IP público após o apply do Terraform" >> $GITHUB_STEP_SUMMARY
+          echo "1. Se ainda não criou o namespace/deployment no cluster, rode o workflow **Terraform Start Application**" >> $GITHUB_STEP_SUMMARY
+          echo "2. Depois, reexecute este workflow para atualizar a imagem no AKS (ou faça via kubectl)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Useful Commands:" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
