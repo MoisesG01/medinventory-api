@@ -35,7 +35,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.6.0
+          terraform_version: 1.10.5
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -62,7 +62,21 @@ jobs:
 
       - name: Terraform Init
         working-directory: infrastructure/terraform
-        run: terraform init
+        run: terraform init -upgrade
+
+      - name: Detach in-cluster resources from state (create workflow)
+        working-directory: infrastructure/terraform
+        run: |
+          # These resources are managed by a separate "start/app" workflow.
+          # In the "create" workflow we detach them to avoid accidental destroys.
+          terraform state rm \
+            'kubernetes_namespace.medinventory[0]' \
+            'kubernetes_service_account.api[0]' \
+            'kubernetes_deployment.api[0]' \
+            'kubernetes_service.api_lb[0]' \
+            'kubernetes_namespace.monitoring[0]' \
+            'helm_release.kube_prometheus_stack[0]' \
+            || true
 
       - name: Terraform Validate
         working-directory: infrastructure/terraform
@@ -70,7 +84,7 @@ jobs:
 
       - name: Terraform Plan
         working-directory: infrastructure/terraform
-        run: terraform plan -var="sp_object_id=${{ secrets.SP_OBJECT_ID }}" -out=tfplan
+        run: terraform plan -refresh=false -var="sp_object_id=${{ secrets.SP_OBJECT_ID }}" -var="environment=${{ inputs.environment }}" -var="enable_k8s_resources=false" -out=tfplan
 
       - name: Terraform Apply
         working-directory: infrastructure/terraform

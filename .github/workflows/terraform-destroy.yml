@@ -39,7 +39,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.6.0
+          terraform_version: 1.10.5
 
       - name: Azure Login
         uses: azure/login@v1
@@ -61,7 +61,7 @@ jobs:
 
       - name: Terraform Init
         working-directory: infrastructure/terraform
-        run: terraform init
+        run: terraform init -upgrade
 
       - name: Terraform Destroy
         working-directory: infrastructure/terraform

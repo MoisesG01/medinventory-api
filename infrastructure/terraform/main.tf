@@ -15,6 +15,14 @@ terraform {
       source  = "hashicorp/random"
       version = "~> 3.1"
     }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.0"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.0"
+    }
   }
 }
 
@@ -32,6 +40,8 @@ data "azurerm_storage_account" "main" {
   name                = "${replace(var.project_name, "-", "")}storage"
   resource_group_name = data.azurerm_resource_group.main.name
 }
+
+data "azurerm_client_config" "current" {}
 
 # Random password for database
 resource "random_password" "mysql_password" {

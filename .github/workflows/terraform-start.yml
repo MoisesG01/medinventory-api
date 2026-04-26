@@ -15,22 +15,17 @@ on:
 
 jobs:
   terraform-start:
-    name: Deploy Application to Azure
+    name: Deploy Application to AKS
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
         with:
-          node-version: '22'
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver: docker
+          terraform_version: 1.10.5
 
       - name: Azure Login
         uses: azure/login@v1
@@ -43,19 +38,12 @@ jobs:
           RESOURCE_GROUP="medinventory-rg"
           ENVIRONMENT="${{ inputs.environment }}"
           
-          APP_NAME="medinventory-app-${ENVIRONMENT}"
           ACR_NAME="medinventoryacr${ENVIRONMENT}"
+          AKS_NAME="medinventory-aks-${ENVIRONMENT}"
           
           echo "Looking for resources in: $RESOURCE_GROUP"
-          echo "  - App Service: $APP_NAME"
           echo "  - ACR: $ACR_NAME"
-          
-          # Verify App Service exists
-          if ! az webapp show --name $APP_NAME --resource-group $RESOURCE_GROUP &> /dev/null; then
-            echo "ERROR: App Service '$APP_NAME' not found"
-            echo "Please run 'Terraform Create Infrastructure' workflow first"
-            exit 1
-          fi
+          echo "  - AKS: $AKS_NAME"
           
           # Verify ACR exists
           if ! az acr show --name $ACR_NAME --resource-group $RESOURCE_GROUP &> /dev/null; then
@@ -63,20 +51,24 @@ jobs:
             echo "Please run 'Terraform Create Infrastructure' workflow first"
             exit 1
           fi
+
+          # Verify AKS exists
+          if ! az aks show --name $AKS_NAME --resource-group $RESOURCE_GROUP &> /dev/null; then
+            echo "ERROR: AKS cluster '$AKS_NAME' not found"
+            echo "Please run 'Terraform Create Infrastructure' workflow first"
+            exit 1
+          fi
           
           ACR_LOGIN_SERVER=$(az acr show --name $ACR_NAME --resource-group $RESOURCE_GROUP --query "loginServer" -o tsv)
-          APP_URL=$(az webapp show --name $APP_NAME --resource-group $RESOURCE_GROUP --query "defaultHostName" -o tsv)
           
-          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
           echo "resource_group=$RESOURCE_GROUP" >> $GITHUB_OUTPUT
           echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
           echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
-          echo "app_url=https://$APP_URL" >> $GITHUB_OUTPUT
+          echo "aks_name=$AKS_NAME" >> $GITHUB_OUTPUT
           
-          echo "App Service: $APP_NAME"
           echo "Resource Group: $RESOURCE_GROUP"
           echo "ACR: $ACR_NAME"
-          echo "App URL: https://$APP_URL"
+          echo "AKS: $AKS_NAME"
 
       - name: Verify Docker Image Exists in ACR
         run: |
@@ -95,156 +87,53 @@ jobs:
             exit 1
           fi
 
-      - name: Check App Service Configuration
+      - name: Extract Azure Credentials (for Terraform)
         run: |
-          echo "Checking App Service configuration..."
-          APP_NAME="${{ steps.azure-info.outputs.app_name }}"
-          RG="${{ steps.azure-info.outputs.resource_group }}"
+          CLIENT_ID=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.clientId')
+          CLIENT_SECRET=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.clientSecret')
+          TENANT_ID=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.tenantId')
+          SUBSCRIPTION_ID=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.subscriptionId')
           
-          echo ""
-          echo "Container Settings:"
-          az webapp config container show \
-            --name $APP_NAME \
-            --resource-group $RG \
-            --output table
-          
-          echo ""
-          echo "Application Settings:"
-          az webapp config appsettings list \
-            --name $APP_NAME \
-            --resource-group $RG \
-            --output table
+          echo "ARM_CLIENT_ID=$CLIENT_ID" >> $GITHUB_ENV
+          echo "ARM_CLIENT_SECRET=$CLIENT_SECRET" >> $GITHUB_ENV
+          echo "ARM_TENANT_ID=$TENANT_ID" >> $GITHUB_ENV
+          echo "ARM_SUBSCRIPTION_ID=$SUBSCRIPTION_ID" >> $GITHUB_ENV
 
-      - name: Configure App Service Container
-        run: |
-          echo "Configuring App Service to use Docker image..."
-          APP_NAME="${{ steps.azure-info.outputs.app_name }}"
-          RG="${{ steps.azure-info.outputs.resource_group }}"
-          ACR_LOGIN_SERVER="${{ steps.azure-info.outputs.acr_login_server }}"
-          
-          # Configure container image (use --container-image-name; avoid invalid DOCKER|/registry refs)
-          az webapp config container set \
-            --name $APP_NAME \
-            --resource-group $RG \
-            --container-image-name "${ACR_LOGIN_SERVER}/medinventory-api:latest" \
-            --container-registry-url "https://${ACR_LOGIN_SERVER}"
-          
-          echo "Container image configured"
+      - name: Terraform Init
+        working-directory: infrastructure/terraform
+        run: terraform init -upgrade
 
-      - name: Restart App Service
-        run: |
-          echo "Restarting App Service..."
-          az webapp restart \
-            --name ${{ steps.azure-info.outputs.app_name }} \
-            --resource-group ${{ steps.azure-info.outputs.resource_group }}
-          echo "App Service restarted successfully"
+      - name: Terraform Plan (enable in-cluster resources)
+        working-directory: infrastructure/terraform
+        run: terraform plan -refresh=false -var="sp_object_id=${{ secrets.SP_OBJECT_ID }}" -var="environment=${{ inputs.environment }}" -var="enable_k8s_resources=true" -out=tfplan
 
-      - name: Wait for Application Startup
-        run: |
-          echo "Waiting 45 seconds for application to start..."
-          sleep 45
+      - name: Terraform Apply
+        working-directory: infrastructure/terraform
+        run: terraform apply -auto-approve tfplan
 
-      - name: Check App Service Logs
-        run: |
-          echo "Fetching recent App Service logs..."
-          APP_NAME="${{ steps.azure-info.outputs.app_name }}"
-          RG="${{ steps.azure-info.outputs.resource_group }}"
-          
-          # Get container logs
-          az webapp log tail \
-            --name $APP_NAME \
-            --resource-group $RG \
-            --lines 50 || echo "Could not fetch logs (this is normal if logs aren't available yet)"
+      - name: Show Outputs
+        working-directory: infrastructure/terraform
+        run: terraform output
 
       - name: Health Check
         continue-on-error: true
         id: health-check
         run: |
-          APP_URL="${{ steps.azure-info.outputs.app_url }}"
-          echo "Checking health endpoint: $APP_URL/health"
-          echo ""
+          echo "Health check is skipped here because the AKS Service external IP can take time to provision."
+          echo "Use Terraform output 'api_load_balancer_ip' or kubectl to check the service once assigned."
+          exit 0
           
-          for i in {1..5}; do
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL/health" || echo "000")
-            
-            if [ "$HTTP_STATUS" = "200" ]; then
-              echo "Application is healthy! (HTTP $HTTP_STATUS)"
-              RESPONSE=$(curl -s "$APP_URL/health")
-              echo "Response: $RESPONSE"
-              exit 0
-            else
-              echo "Attempt $i/5 failed (HTTP $HTTP_STATUS)"
-              
-              if [ $i -eq 5 ]; then
-                echo ""
-                echo "Health check failed after 5 attempts"
-                echo ""
-                echo "Trying to get response body:"
-                curl -s "$APP_URL/health" || echo "No response"
-                echo ""
-                echo "Trying root path:"
-                curl -s -I "$APP_URL/" | head -n 5
-              else
-                echo "   Waiting 15 seconds before retry..."
-                sleep 15
-              fi
-            fi
-          done
-          
-          exit 1
-
-      - name: Diagnose Failure
-        if: failure() && steps.health-check.outcome == 'failure'
-        run: |
-          echo "DIAGNOSTIC INFORMATION"
-          echo "================================"
-          echo ""
-          
-          APP_NAME="${{ steps.azure-info.outputs.app_name }}"
-          RG="${{ steps.azure-info.outputs.resource_group }}"
-          
-          echo "App Service Status:"
-          az webapp show \
-            --name $APP_NAME \
-            --resource-group $RG \
-            --query "{name:name, state:state, hostNames:hostNames}" \
-            --output table
-          
-          echo ""
-          echo "Container Configuration:"
-          az webapp config container show \
-            --name $APP_NAME \
-            --resource-group $RG
-          
-          echo ""
-          echo "Recent Logs (last 100 lines):"
-          az webapp log tail \
-            --name $APP_NAME \
-            --resource-group $RG \
-            --lines 100 || echo "Logs not available"
-          
-          echo ""
-          echo "Troubleshooting Tips:"
-          echo "1. Check Azure Portal > App Service > Log stream"
-          echo "2. Verify DATABASE_URL is configured correctly"
-          echo "3. Check if container is pulling from ACR successfully"
-          echo "4. Review application logs for errors"
 
       - name: Summary
         if: always()
         run: |
-          echo "## Application Restarted" >> $GITHUB_STEP_SUMMARY
+          echo "## Application Deployment Triggered (AKS)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Environment:** ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
-          echo "**App Service:** ${{ steps.azure-info.outputs.app_name }}" >> $GITHUB_STEP_SUMMARY
           echo "**Resource Group:** ${{ steps.azure-info.outputs.resource_group }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Application URL:** ${{ steps.azure-info.outputs.app_url }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Quick Links:" >> $GITHUB_STEP_SUMMARY
-          echo "- [Application Home](${{ steps.azure-info.outputs.app_url }})" >> $GITHUB_STEP_SUMMARY
-          echo "- [Health Check](${{ steps.azure-info.outputs.app_url }}/health)" >> $GITHUB_STEP_SUMMARY
-          echo "- [Swagger API Docs](${{ steps.azure-info.outputs.app_url }}/api)" >> $GITHUB_STEP_SUMMARY
+          echo "**AKS:** ${{ steps.azure-info.outputs.aks_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**ACR:** ${{ steps.azure-info.outputs.acr_name }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Note:" >> $GITHUB_STEP_SUMMARY
-          echo "This workflow only restarts the App Service with the existing Docker image." >> $GITHUB_STEP_SUMMARY
+          echo "This workflow applies Kubernetes resources via Terraform (enable_k8s_resources=true)." >> $GITHUB_STEP_SUMMARY
           echo "To update the image, run the **Build and Push Docker Image** workflow first." >> $GITHUB_STEP_SUMMARY

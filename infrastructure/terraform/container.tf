@@ -8,14 +8,3 @@ resource "azurerm_container_registry" "main" {
 
   tags = var.tags
 }
-
-# App Service Plan
-resource "azurerm_service_plan" "main" {
-  name                = "${var.project_name}-asp-${var.environment}"
-  resource_group_name = data.azurerm_resource_group.main.name
-  location            = data.azurerm_resource_group.main.location
-  os_type             = "Linux"
-  sku_name            = var.app_service_sku
-
-  tags = var.tags
-}
