@@ -66,7 +66,10 @@ output "aks_oidc_issuer_url" {
 
 output "api_load_balancer_ip" {
   description = "Public IP address of the Kubernetes Service (after apply)"
-  value       = try(kubernetes_service.api_lb.status[0].load_balancer[0].ingress[0].ip, null)
+  value = var.enable_k8s_resources ? try(
+    kubernetes_service.api_lb[0].status[0].load_balancer[0].ingress[0].ip,
+    null
+  ) : null
 }
 
 output "db_backup_container_name" {

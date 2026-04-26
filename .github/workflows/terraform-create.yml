@@ -70,7 +70,7 @@ jobs:
 
       - name: Terraform Plan
         working-directory: infrastructure/terraform
-        run: terraform plan -var="sp_object_id=${{ secrets.SP_OBJECT_ID }}" -var="environment=${{ inputs.environment }}" -out=tfplan
+        run: terraform plan -refresh=false -var="sp_object_id=${{ secrets.SP_OBJECT_ID }}" -var="environment=${{ inputs.environment }}" -var="enable_k8s_resources=false" -out=tfplan
 
       - name: Terraform Apply
         working-directory: infrastructure/terraform

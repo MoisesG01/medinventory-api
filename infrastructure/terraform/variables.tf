@@ -7,13 +7,27 @@ variable "project_name" {
 variable "location" {
   description = "Azure region for resources"
   type        = string
-  default     = "Mexico Central"
+  # Default location for resources that follow the Resource Group region.
+  # Note: many resources in this repo use `data.azurerm_resource_group.main.location`.
+  default     = "mexicocentral"
+}
+
+variable "jobs_location" {
+  description = "Azure region for Container Apps Environment / Jobs (must support Microsoft.App/managedEnvironments)"
+  type        = string
+  default     = "brazilsouth"
 }
 
 variable "environment" {
   description = "Environment (dev, staging, prod)"
   type        = string
   default     = "dev"
+}
+
+variable "enable_k8s_resources" {
+  description = "Whether to manage in-cluster Kubernetes/Helm resources (app + monitoring) via Terraform"
+  type        = bool
+  default     = false
 }
 
 variable "aks_kubernetes_version" {

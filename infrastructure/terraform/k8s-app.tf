@@ -1,13 +1,15 @@
 resource "kubernetes_namespace" "medinventory" {
+  count = var.enable_k8s_resources ? 1 : 0
   metadata {
     name = "medinventory"
   }
 }
 
 resource "kubernetes_service_account" "api" {
+  count = var.enable_k8s_resources ? 1 : 0
   metadata {
     name      = "medinventory-api"
-    namespace = kubernetes_namespace.medinventory.metadata[0].name
+    namespace = kubernetes_namespace.medinventory[0].metadata[0].name
     annotations = {
       "azure.workload.identity/client-id" = azurerm_user_assigned_identity.api_workload.client_id
     }
@@ -15,9 +17,10 @@ resource "kubernetes_service_account" "api" {
 }
 
 resource "kubernetes_deployment" "api" {
+  count = var.enable_k8s_resources ? 1 : 0
   metadata {
     name      = "medinventory-api"
-    namespace = kubernetes_namespace.medinventory.metadata[0].name
+    namespace = kubernetes_namespace.medinventory[0].metadata[0].name
     labels = {
       app = "medinventory-api"
     }
@@ -43,7 +46,7 @@ resource "kubernetes_deployment" "api" {
       }
 
       spec {
-        service_account_name = kubernetes_service_account.api.metadata[0].name
+        service_account_name = kubernetes_service_account.api[0].metadata[0].name
 
         container {
           name  = "api"
@@ -145,9 +148,10 @@ resource "kubernetes_deployment" "api" {
 }
 
 resource "kubernetes_service" "api_lb" {
+  count = var.enable_k8s_resources ? 1 : 0
   metadata {
     name      = "medinventory-api"
-    namespace = kubernetes_namespace.medinventory.metadata[0].name
+    namespace = kubernetes_namespace.medinventory[0].metadata[0].name
   }
 
   spec {

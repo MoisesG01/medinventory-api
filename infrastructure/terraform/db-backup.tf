@@ -32,7 +32,7 @@ resource "azurerm_role_assignment" "db_backup_blob_contributor" {
 # Infra para Container Apps Job (logs e environment)
 resource "azurerm_log_analytics_workspace" "jobs" {
   name                = "${var.project_name}-jobs-law-${var.environment}"
-  location            = data.azurerm_resource_group.main.location
+  location            = var.jobs_location
   resource_group_name = data.azurerm_resource_group.main.name
   sku                 = "PerGB2018"
   retention_in_days   = 30
@@ -41,7 +41,7 @@ resource "azurerm_log_analytics_workspace" "jobs" {
 
 resource "azurerm_container_app_environment" "jobs" {
   name                       = "${var.project_name}-jobs-cae-${var.environment}"
-  location                   = data.azurerm_resource_group.main.location
+  location                   = var.jobs_location
   resource_group_name        = data.azurerm_resource_group.main.name
   log_analytics_workspace_id = azurerm_log_analytics_workspace.jobs.id
   tags                       = var.tags
@@ -52,7 +52,7 @@ resource "azurerm_container_app_job" "mysql_dump" {
   name                         = "${var.project_name}-mysql-dump-${var.environment}"
   container_app_environment_id = azurerm_container_app_environment.jobs.id
   resource_group_name          = data.azurerm_resource_group.main.name
-  location                     = data.azurerm_resource_group.main.location
+  location                     = var.jobs_location
 
   identity {
     type         = "UserAssigned"
