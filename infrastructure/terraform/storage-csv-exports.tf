@@ -32,3 +32,18 @@ resource "azurerm_role_assignment" "app_csv_blob_data_contributor" {
     azurerm_storage_account.artifacts,
   ]
 }
+
+# Necessário para emitir **user delegation key** (usada na geração de SAS)
+# quando a API autentica via Workload Identity / Managed Identity.
+resource "azurerm_role_assignment" "app_csv_blob_delegator" {
+  scope                = azurerm_storage_account.artifacts.id
+  role_definition_name = "Storage Blob Delegator"
+  principal_id         = azurerm_user_assigned_identity.api_workload.principal_id
+
+  skip_service_principal_aad_check = true
+
+  depends_on = [
+    azurerm_user_assigned_identity.api_workload,
+    azurerm_storage_account.artifacts,
+  ]
+}
