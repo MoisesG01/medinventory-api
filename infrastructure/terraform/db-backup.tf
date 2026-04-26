@@ -32,7 +32,9 @@ resource "azurerm_role_assignment" "db_backup_blob_contributor" {
 # Infra para Container Apps Job (logs e environment)
 resource "azurerm_log_analytics_workspace" "jobs" {
   name                = "${var.project_name}-jobs-law-${var.environment}"
-  location            = var.jobs_location
+  # Log Analytics Workspace location can't be changed in-place.
+  # Keep it in the Resource Group's location to avoid replacement conflicts.
+  location            = data.azurerm_resource_group.main.location
   resource_group_name = data.azurerm_resource_group.main.name
   sku                 = "PerGB2018"
   retention_in_days   = 30

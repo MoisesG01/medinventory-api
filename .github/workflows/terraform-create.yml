@@ -64,6 +64,20 @@ jobs:
         working-directory: infrastructure/terraform
         run: terraform init -upgrade
 
+      - name: Detach in-cluster resources from state (create workflow)
+        working-directory: infrastructure/terraform
+        run: |
+          # These resources are managed by a separate "start/app" workflow.
+          # In the "create" workflow we detach them to avoid accidental destroys.
+          terraform state rm \
+            'kubernetes_namespace.medinventory[0]' \
+            'kubernetes_service_account.api[0]' \
+            'kubernetes_deployment.api[0]' \
+            'kubernetes_service.api_lb[0]' \
+            'kubernetes_namespace.monitoring[0]' \
+            'helm_release.kube_prometheus_stack[0]' \
+            || true
+
       - name: Terraform Validate
         working-directory: infrastructure/terraform
         run: terraform validate
