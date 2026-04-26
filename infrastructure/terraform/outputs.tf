@@ -54,24 +54,34 @@ output "container_registry_admin_password" {
   sensitive   = true
 }
 
-output "app_service_default_hostname" {
-  description = "App Service default hostname"
-  value       = azurerm_linux_web_app.main.default_hostname
+output "aks_name" {
+  description = "AKS cluster name"
+  value       = azurerm_kubernetes_cluster.main.name
 }
 
-output "app_service_url" {
-  description = "App Service URL"
-  value       = "https://${azurerm_linux_web_app.main.default_hostname}"
+output "aks_oidc_issuer_url" {
+  description = "OIDC issuer URL (Workload Identity)"
+  value       = azurerm_kubernetes_cluster.main.oidc_issuer_url
+}
+
+output "api_load_balancer_ip" {
+  description = "Public IP address of the Kubernetes Service (after apply)"
+  value       = try(kubernetes_service.api_lb.status[0].load_balancer[0].ingress[0].ip, null)
+}
+
+output "db_backup_container_name" {
+  description = "Blob container where MySQL dumps are stored"
+  value       = azurerm_storage_container.db_backups.name
 }
 
 output "csv_exports_storage_account_name" {
   description = "Storage account name for generated equipment CSV files (not Terraform state)"
-  value       = azurerm_storage_account.csv_exports.name
+  value       = azurerm_storage_account.artifacts.name
 }
 
 output "csv_exports_blob_endpoint" {
   description = "Primary blob endpoint for CSV export storage"
-  value       = azurerm_storage_account.csv_exports.primary_blob_endpoint
+  value       = azurerm_storage_account.artifacts.primary_blob_endpoint
 }
 
 output "csv_exports_container_name" {

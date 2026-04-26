@@ -139,6 +139,19 @@ jobs:
           echo "image_full_name=$IMAGE_NAME:$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "digest=$DIGEST" >> $GITHUB_OUTPUT
 
+      - name: Set AKS Context
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: medinventory-rg
+          cluster-name: medinventory-aks-${{ inputs.environment }}
+
+      - name: Deploy to AKS (set image)
+        run: |
+          set -euo pipefail
+          echo "Deploying image to AKS..."
+          kubectl -n medinventory set image deployment/medinventory-api api="${{ steps.image-details.outputs.image_full_name }}"
+          kubectl -n medinventory rollout status deployment/medinventory-api --timeout=5m
+
       - name: Summary
         if: always()
         run: |
@@ -150,8 +163,8 @@ jobs:
           echo "**Registry:** ${{ steps.acr-info.outputs.acr_login_server }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY
-          echo "1. Run **Terraform Start Application** workflow to deploy this image" >> $GITHUB_STEP_SUMMARY
-          echo "2. Or configure App Service to use this image manually" >> $GITHUB_STEP_SUMMARY
+          echo "1. App foi implantada no AKS (deployment medinventory-api)" >> $GITHUB_STEP_SUMMARY
+          echo "2. Verifique o serviço LoadBalancer e o IP público após o apply do Terraform" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Useful Commands:" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY

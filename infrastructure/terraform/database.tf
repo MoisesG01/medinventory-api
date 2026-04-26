@@ -5,13 +5,13 @@ resource "azurerm_mysql_flexible_server" "main" {
   location               = data.azurerm_resource_group.main.location
   administrator_login    = var.mysql_admin_username
   administrator_password = random_password.mysql_password.result
-  
+
   backup_retention_days        = 7
   geo_redundant_backup_enabled = false
-  
-  sku_name   = var.mysql_sku_name
-  zone       = "3"
-  
+
+  sku_name = var.mysql_sku_name
+  zone     = "3"
+
   storage {
     size_gb = var.mysql_storage_size_gb
   }
@@ -52,7 +52,7 @@ resource "azurerm_mysql_flexible_server_configuration" "timezone" {
   name                = "time_zone"
   resource_group_name = data.azurerm_resource_group.main.name
   server_name         = azurerm_mysql_flexible_server.main.name
-  value               = "-03:00"  # Brazil timezone
+  value               = "-03:00" # Brazil timezone
 }
 
 # MySQL Configuration for SQL mode
