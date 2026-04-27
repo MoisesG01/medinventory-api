@@ -42,6 +42,12 @@ resource "kubernetes_deployment" "api" {
         }
         annotations = {
           "azure.workload.identity/use" = "true"
+
+          # Azure Managed Prometheus (ama-metrics) pod-annotation scraping
+          # Ensures `http_requests_total` and other app metrics are collected consistently in AKS.
+          "prometheus.io/scrape" = "true"
+          "prometheus.io/port"   = "8080"
+          "prometheus.io/path"   = "/metrics"
         }
       }
 

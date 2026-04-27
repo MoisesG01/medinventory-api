@@ -8,8 +8,13 @@ terraform {
   required_version = ">= 1.0"
   required_providers {
     azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 3.0"
+      source = "hashicorp/azurerm"
+      # Needed for Azure Monitor Workspace + Managed Prometheus resources.
+      version = ">= 3.90, < 4.0"
+    }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.2"
     }
     random = {
       source  = "hashicorp/random"

@@ -1,5 +1,5 @@
 locals {
-  aks_name      = "${var.project_name}-aks-${var.environment}"
+  aks_name       = "${var.project_name}-aks-${var.environment}"
   aks_dns_prefix = "${replace(var.project_name, "-", "")}-${var.environment}"
 }
 
@@ -18,6 +18,10 @@ resource "azurerm_kubernetes_cluster" "main" {
   oidc_issuer_enabled       = true
   workload_identity_enabled = true
 
+  # Required to allow Azure Managed Prometheus (Azure Monitor metrics add-on) to scrape in-cluster metrics.
+  # The actual collection is configured via DCR/DCE association (see `managed-prometheus.tf`).
+  monitor_metrics {}
+
   default_node_pool {
     name                = "system"
     vm_size             = var.aks_vm_size
@@ -27,6 +31,12 @@ resource "azurerm_kubernetes_cluster" "main" {
     node_count          = var.aks_node_min_count
     os_disk_size_gb     = 50
     type                = "VirtualMachineScaleSets"
+
+    upgrade_settings {
+      drain_timeout_in_minutes      = 0
+      max_surge                     = "10%"
+      node_soak_duration_in_minutes = 0
+    }
   }
 
   network_profile {
