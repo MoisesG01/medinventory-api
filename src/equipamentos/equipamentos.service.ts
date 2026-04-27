@@ -298,6 +298,29 @@ export class EquipamentosService {
     };
   }
 
+  async exportCsvFileAndUpload(
+    filters?: ExportEquipamentoCsvQueryDto,
+  ): Promise<{ fileName: string; buffer: Buffer }> {
+    const where = this.buildWhereFromFilters(filters);
+
+    const equipamentos = await this.prisma.equipamento.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const buffer = this.buildEquipamentosCsvBuffer(equipamentos);
+    const blobName = `equipamentos/${randomUUID()}.csv`;
+
+    // Mantém o comportamento atual: salva no Blob (para compartilhamento/auditoria),
+    // mas retorna o arquivo direto no response para download imediato.
+    await this.blobCsvService.uploadCsvAndGetReadSas(buffer, blobName);
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const fileName = `equipamentos-${dateStr}.csv`;
+
+    return { fileName, buffer };
+  }
+
   async findOne(id: string) {
     const cacheKey = this.cacheKeyForEquipamento(id);
     const cached = await this.cache.getJson<any>(cacheKey);

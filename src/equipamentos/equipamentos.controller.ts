@@ -11,6 +11,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Res,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -19,7 +20,9 @@ import {
   ApiBearerAuth,
   ApiParam,
   ApiQuery,
+  ApiProduces,
 } from '@nestjs/swagger';
+import { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { EquipamentosService } from './equipamentos.service';
 import { CreateEquipamentoDto } from './dto/create-equipamento.dto';
@@ -138,8 +141,9 @@ export class EquipamentosController {
   @UserTypes(UserType.Administrador, UserType.Gestor)
   @ApiOperation({
     summary:
-      'Gerar CSV dos equipamentos, enviar ao Azure Blob Storage e obter URL de download (SAS)',
+      'Gerar CSV dos equipamentos (download) e salvar no Blob Storage',
   })
+  @ApiProduces('text/csv')
   @ApiQuery({
     name: 'nome',
     required: false,
@@ -167,9 +171,7 @@ export class EquipamentosController {
   })
   @ApiResponse({
     status: 200,
-    description:
-      'Metadados e URL temporária (SAS) para download direto do blob no Azure Storage',
-    type: ExportCsvResponseDto,
+    description: 'Arquivo CSV para download (attachment)',
   })
   @ApiResponse({
     status: 401,
@@ -184,8 +186,16 @@ export class EquipamentosController {
     status: 503,
     description: 'Armazenamento de exportação não configurado ou indisponível',
   })
-  async exportCsv(@Query() query?: ExportEquipamentoCsvQueryDto) {
-    return this.equipamentosService.exportCsvToBlob(query);
+  async exportCsv(
+    @Query() query: ExportEquipamentoCsvQueryDto | undefined,
+    @Res() res: Response,
+  ) {
+    const { fileName, buffer } =
+      await this.equipamentosService.exportCsvFileAndUpload(query);
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.send(buffer);
   }
 
   @Get(':id')

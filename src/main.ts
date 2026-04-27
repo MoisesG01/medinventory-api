@@ -2,9 +2,34 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { httpRequestsTotal, normalizeRoute } from './metrics/metrics';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Métricas HTTP (Prometheus): conta requests por método/rota/status_code.
+  // Usa res.on('finish') para capturar também respostas 404/500.
+  app.use((req, res, next) => {
+    // Evitar “auto-métrica” do próprio endpoint de métricas
+    if (req.path === '/metrics') return next();
+
+    res.on('finish', () => {
+      const method = (req.method || 'UNKNOWN').toUpperCase();
+      const status = String(res.statusCode ?? 0);
+
+      // Para rotas encontradas pelo Express, req.route.path existe e mantém baixa cardinalidade.
+      // Para 404, req.route não existe; caímos para req.path.
+      const routeFromExpress =
+        (req as any).route?.path && (req as any).baseUrl
+          ? `${(req as any).baseUrl}${(req as any).route.path}`
+          : (req as any).route?.path;
+      const route = normalizeRoute(routeFromExpress || req.path || 'unknown');
+
+      httpRequestsTotal.inc({ method, route, status_code: status });
+    });
+
+    next();
+  });
 
   // Configuração de CORS
   app.enableCors({

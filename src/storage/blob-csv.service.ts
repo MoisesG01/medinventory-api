@@ -51,6 +51,11 @@ export class BlobCsvService {
     return { accountName, accountKey };
   }
 
+  private isLocalInsecureBlobEndpoint(connectionString: string): boolean {
+    // Heurística: Azurite/local costuma usar BlobEndpoint=http://...
+    return /BlobEndpoint=http:\/\//i.test(connectionString);
+  }
+
   /**
    * Envia o CSV ao blob e devolve URL com SAS de leitura (curta duração).
    * Produção (App Service): Managed Identity + user delegation SAS.
@@ -76,9 +81,9 @@ export class BlobCsvService {
         this.parseConnectionStringAccount(connectionString);
       const blobServiceClient =
         BlobServiceClient.fromConnectionString(connectionString);
-      const blockBlobClient = blobServiceClient
-        .getContainerClient(containerName)
-        .getBlockBlobClient(blobName);
+      const containerClient = blobServiceClient.getContainerClient(containerName);
+      await containerClient.createIfNotExists();
+      const blockBlobClient = containerClient.getBlockBlobClient(blobName);
 
       await blockBlobClient.uploadData(buffer, {
         blobHTTPHeaders: {
@@ -90,6 +95,9 @@ export class BlobCsvService {
         accountName,
         accountKey,
       );
+      const protocol = this.isLocalInsecureBlobEndpoint(connectionString)
+        ? SASProtocol.HttpsAndHttp
+        : SASProtocol.Https;
       const sas = generateBlobSASQueryParameters(
         {
           containerName,
@@ -97,7 +105,7 @@ export class BlobCsvService {
           permissions: BlobSASPermissions.parse('r'),
           startsOn,
           expiresOn,
-          protocol: SASProtocol.Https,
+          protocol,
         },
         sharedKeyCredential,
       ).toString();
@@ -128,9 +136,9 @@ export class BlobCsvService {
       new DefaultAzureCredential(),
     );
 
-    const blockBlobClient = blobServiceClient
-      .getContainerClient(containerName)
-      .getBlockBlobClient(blobName);
+    const containerClient = blobServiceClient.getContainerClient(containerName);
+    await containerClient.createIfNotExists();
+    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
 
     await blockBlobClient.uploadData(buffer, {
       blobHTTPHeaders: {
@@ -143,6 +151,9 @@ export class BlobCsvService {
       keyExpiresOn,
     );
 
+    const protocol = endpoint.toLowerCase().startsWith('http://')
+      ? SASProtocol.HttpsAndHttp
+      : SASProtocol.Https;
     const sas = generateBlobSASQueryParameters(
       {
         containerName,
@@ -150,7 +161,7 @@ export class BlobCsvService {
         permissions: BlobSASPermissions.parse('r'),
         startsOn,
         expiresOn,
-        protocol: SASProtocol.Https,
+        protocol,
       },
       userDelegationKey,
       accountName,
