@@ -2,6 +2,10 @@ resource "kubernetes_namespace" "medinventory" {
   count = var.enable_k8s_resources ? 1 : 0
   metadata {
     name = "medinventory"
+    labels = {
+      # Required for Azure Workload Identity mutating webhook injection
+      "azure-workload-identity.io/enable" = "true"
+    }
   }
 }
 
@@ -39,10 +43,10 @@ resource "kubernetes_deployment" "api" {
       metadata {
         labels = {
           app = "medinventory-api"
+          # Required by AKS-managed Azure Workload Identity mutating webhook (objectSelector uses labels)
+          "azure.workload.identity/use" = "true"
         }
         annotations = {
-          "azure.workload.identity/use" = "true"
-
           # Azure Managed Prometheus (ama-metrics) pod-annotation scraping
           # Ensures `http_requests_total` and other app metrics are collected consistently in AKS.
           "prometheus.io/scrape" = "true"
