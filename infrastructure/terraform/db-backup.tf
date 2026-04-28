@@ -110,17 +110,18 @@ resource "azurerm_container_app_job" "mysql_dump" {
       }
 
       # Instala cliente mysql, faz dump com SSL e envia para o Blob usando Managed Identity
-      command = ["/bin/sh", "-lc"]
+      command = ["/bin/bash", "-lc"]
       args = [
         join(" && ", [
-          "set -eu",
-          "set -o pipefail 2>/dev/null || true",
+          "set -euo pipefail",
           "echo 'Installing mysql client...'",
-          "if command -v apt-get >/dev/null 2>&1; then apt-get update -y && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends default-mysql-client ca-certificates gzip; elif command -v tdnf >/dev/null 2>&1; then tdnf -y install mariadb ca-certificates gzip; elif command -v apk >/dev/null 2>&1; then apk add --no-cache mysql-client ca-certificates gzip; else echo 'No supported package manager found (apt-get/tdnf/apk)'; exit 1; fi",
+          "if command -v apt-get >/dev/null 2>&1; then apt-get update -y && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends default-mysql-client ca-certificates gzip; elif command -v tdnf >/dev/null 2>&1; then tdnf -y install ca-certificates gzip mariadb; elif command -v apk >/dev/null 2>&1; then apk add --no-cache mysql-client ca-certificates gzip; else echo 'No supported package manager found (apt-get/tdnf/apk)'; exit 1; fi",
+          "command -v mysqldump >/dev/null 2>&1 || command -v mariadb-dump >/dev/null 2>&1 || (echo 'mysqldump not found after install' && exit 1)",
           "ts=$(date -u +%Y-%m-%dT%H-%M-%SZ)",
           "file=/tmp/$${MYSQL_DATABASE}_$${ts}.sql.gz",
           "echo 'Running mysqldump...'",
-          "mysqldump --ssl-mode=REQUIRED -h \"$${MYSQL_HOST}\" -u \"$${MYSQL_USER}\" -p\"$${MYSQL_PASSWORD}\" \"$${MYSQL_DATABASE}\" | gzip > \"$file\"",
+          "DUMP_BIN=mysqldump; command -v mysqldump >/dev/null 2>&1 || DUMP_BIN=mariadb-dump",
+          "\"$${DUMP_BIN}\" --ssl-mode=REQUIRED -h \"$${MYSQL_HOST}\" -u \"$${MYSQL_USER}\" -p\"$${MYSQL_PASSWORD}\" \"$${MYSQL_DATABASE}\" | gzip > \"$file\"",
           "echo 'Logging into Azure with managed identity...'",
           "az login --identity --allow-no-subscriptions 1>/dev/null",
           "blob_name=$${MYSQL_DATABASE}/$${ts}.sql.gz",
