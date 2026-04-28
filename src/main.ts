@@ -2,7 +2,11 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import { httpRequestsTotal, normalizeRoute } from './metrics/metrics';
+import {
+  httpRequestDurationSeconds,
+  httpRequestsTotal,
+  normalizeRoute,
+} from './metrics/metrics';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -12,6 +16,8 @@ async function bootstrap() {
   app.use((req, res, next) => {
     // Evitar “auto-métrica” do próprio endpoint de métricas
     if (req.path === '/metrics') return next();
+
+    const startNs = process.hrtime.bigint();
 
     res.on('finish', () => {
       const method = (req.method || 'UNKNOWN').toUpperCase();
@@ -26,6 +32,12 @@ async function bootstrap() {
       const route = normalizeRoute(routeFromExpress || req.path || 'unknown');
 
       httpRequestsTotal.inc({ method, route, status_code: status });
+
+      const durationSeconds = Number(process.hrtime.bigint() - startNs) / 1e9;
+      httpRequestDurationSeconds.observe(
+        { method, route, status_code: status },
+        durationSeconds,
+      );
     });
 
     next();
