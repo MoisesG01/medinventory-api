@@ -41,7 +41,7 @@ variable "enable_managed_prometheus" {
 variable "enable_managed_grafana" {
   description = "Whether to provision Azure Managed Grafana and configure datasource + dashboards via Azure CLI"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "managed_grafana_name" {

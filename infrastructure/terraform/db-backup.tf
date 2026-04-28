@@ -113,10 +113,10 @@ resource "azurerm_container_app_job" "mysql_dump" {
       command = ["/bin/sh", "-lc"]
       args = [
         join(" && ", [
-          "set -euo pipefail",
+          "set -eu",
+          "set -o pipefail 2>/dev/null || true",
           "echo 'Installing mysql client...'",
-          "apt-get update -y",
-          "DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends mysql-client ca-certificates gzip",
+          "if command -v apt-get >/dev/null 2>&1; then apt-get update -y && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends default-mysql-client ca-certificates gzip; elif command -v tdnf >/dev/null 2>&1; then tdnf -y install mariadb ca-certificates gzip; elif command -v apk >/dev/null 2>&1; then apk add --no-cache mysql-client ca-certificates gzip; else echo 'No supported package manager found (apt-get/tdnf/apk)'; exit 1; fi",
           "ts=$(date -u +%Y-%m-%dT%H-%M-%SZ)",
           "file=/tmp/$${MYSQL_DATABASE}_$${ts}.sql.gz",
           "echo 'Running mysqldump...'",
