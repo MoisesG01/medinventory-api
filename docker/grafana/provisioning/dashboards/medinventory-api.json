@@ -1418,7 +1418,7 @@
     {
       "id": 29,
       "type": "timeseries",
-      "title": "Latência p95 (5m) - Users por rota",
+      "title": "Latência p95 (15m) - Users por rota",
       "gridPos": {
         "h": 8,
         "w": 24,
@@ -1432,7 +1432,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "1000 * histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{route=~\"/users(/.*)?\"}[5m])) by (le, route, method))",
+          "expr": "1000 * histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{route=~\"/users(/.*)?\"}[15m])) by (le, route, method))",
           "legendFormat": "{{method}} {{route}}"
         }
       ],
@@ -1457,7 +1457,7 @@
     {
       "id": 30,
       "type": "timeseries",
-      "title": "Latência p95 (5m) - Equipamentos por rota",
+      "title": "Latência p95 (15m) - Equipamentos por rota",
       "gridPos": {
         "h": 8,
         "w": 24,
@@ -1471,7 +1471,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "1000 * histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{route=~\"/equipamentos(/.*)?\"}[5m])) by (le, route, method))",
+          "expr": "1000 * histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{route=~\"/equipamentos(/.*)?\"}[15m])) by (le, route, method))",
           "legendFormat": "{{method}} {{route}}"
         }
       ],
