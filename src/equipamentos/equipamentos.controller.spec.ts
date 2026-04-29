@@ -16,7 +16,7 @@ describe('EquipamentosController', () => {
   const mockEquipamentosService = {
     create: jest.fn(),
     findAll: jest.fn(),
-    exportCsvToBlob: jest.fn(),
+    exportCsvFileAndUpload: jest.fn(),
     findOne: jest.fn(),
     update: jest.fn(),
     updateStatus: jest.fn(),
@@ -110,37 +110,52 @@ describe('EquipamentosController', () => {
   });
 
   describe('exportCsv', () => {
-    it('should return export payload and call service with query', async () => {
+    it('should set headers and send buffer when query is provided', async () => {
       const payload = {
-        downloadUrl: 'https://acct.blob.core.windows.net/c/x.csv?sv=1',
-        expiresOn: '2030-01-01T00:00:00.000Z',
-        blobName: 'equipamentos/x.csv',
         fileName: 'equipamentos-2030-01-01.csv',
+        buffer: Buffer.from('id,nome\n1,Monitor\n', 'utf-8'),
       };
-      mockEquipamentosService.exportCsvToBlob.mockResolvedValue(payload);
+      mockEquipamentosService.exportCsvFileAndUpload.mockResolvedValue(payload);
 
       const query: ExportEquipamentoCsvQueryDto = {
         nome: 'Monitor',
       };
 
-      const result = await controller.exportCsv(query);
+      const res = {
+        setHeader: jest.fn(),
+        send: jest.fn(),
+      } as any;
 
-      expect(service.exportCsvToBlob).toHaveBeenCalledWith(query);
-      expect(result).toEqual(payload);
+      await controller.exportCsv(query, res);
+
+      expect(service.exportCsvFileAndUpload).toHaveBeenCalledWith(query);
+      expect(res.setHeader).toHaveBeenCalledWith(
+        'Content-Type',
+        'text/csv; charset=utf-8',
+      );
+      expect(res.setHeader).toHaveBeenCalledWith(
+        'Content-Disposition',
+        `attachment; filename="${payload.fileName}"`,
+      );
+      expect(res.send).toHaveBeenCalledWith(payload.buffer);
     });
 
-    it('should call service without query when undefined', async () => {
+    it('should call service with undefined query', async () => {
       const payload = {
-        downloadUrl: 'https://acct.blob.core.windows.net/c/y.csv',
-        expiresOn: '2030-01-01T00:00:00.000Z',
-        blobName: 'equipamentos/y.csv',
         fileName: 'equipamentos-2030-01-01.csv',
+        buffer: Buffer.from('', 'utf-8'),
       };
-      mockEquipamentosService.exportCsvToBlob.mockResolvedValue(payload);
+      mockEquipamentosService.exportCsvFileAndUpload.mockResolvedValue(payload);
 
-      await controller.exportCsv(undefined);
+      const res = {
+        setHeader: jest.fn(),
+        send: jest.fn(),
+      } as any;
 
-      expect(service.exportCsvToBlob).toHaveBeenCalledWith(undefined);
+      await controller.exportCsv(undefined, res);
+
+      expect(service.exportCsvFileAndUpload).toHaveBeenCalledWith(undefined);
+      expect(res.send).toHaveBeenCalledWith(payload.buffer);
     });
   });
 

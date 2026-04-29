@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ama-metrics-settings-configmap
+  namespace: kube-system
+data:
+  # Keep this small and focused. The addon merges defaults + this file.
+  # Enable pod annotation-based scraping for the medinventory namespace (optional, but useful).
+  pod-annotation-based-scraping: |-
+    podannotationnamespaceregex = "medinventory"
+
+  # Disable minimal ingestion profile so custom jobs can ingest freely.
+  # (Default is true, which can unintentionally drop non-default metrics.)
+  default-targets-metrics-keep-list: |-
+    minimalingestionprofile = false
+

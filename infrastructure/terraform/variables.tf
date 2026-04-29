@@ -9,7 +9,7 @@ variable "location" {
   type        = string
   # Default location for resources that follow the Resource Group region.
   # Note: many resources in this repo use `data.azurerm_resource_group.main.location`.
-  default     = "mexicocentral"
+  default = "mexicocentral"
 }
 
 variable "jobs_location" {
@@ -27,7 +27,34 @@ variable "environment" {
 variable "enable_k8s_resources" {
   description = "Whether to manage in-cluster Kubernetes/Helm resources (app + monitoring) via Terraform"
   type        = bool
+  # Set to true because this repo already manages in-cluster resources (namespace/app/monitoring)
+  # and we want Terraform defaults to be non-destructive.
+  default = true
+}
+
+variable "enable_managed_prometheus" {
+  description = "Whether to provision Azure Monitor Workspace + DCR/DCE and enable AKS Managed Prometheus (Azure Monitor metrics add-on)"
+  type        = bool
+  default     = true
+}
+
+variable "enable_managed_grafana" {
+  description = "Whether to provision Azure Managed Grafana and configure datasource + dashboards via Azure CLI"
+  type        = bool
   default     = false
+}
+
+variable "managed_grafana_name" {
+  description = "Name for Azure Managed Grafana instance"
+  type        = string
+  # Keep under 23 chars to satisfy AMG naming constraints.
+  default = "medinv-grafana-dev"
+}
+
+variable "managed_grafana_location" {
+  description = "Azure region for Azure Managed Grafana (must be supported by Microsoft.Dashboard/grafana)"
+  type        = string
+  default     = "brazilsouth"
 }
 
 variable "aks_kubernetes_version" {

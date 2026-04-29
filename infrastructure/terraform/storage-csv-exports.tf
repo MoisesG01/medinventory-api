@@ -8,6 +8,9 @@ resource "azurerm_storage_account" "artifacts" {
   account_replication_type = "LRS"
   min_tls_version          = "TLS1_2"
 
+  # Keep explicit to avoid provider trying to clear it (which Azure rejects with 400).
+  allowed_copy_scope = "PrivateLink"
+
   allow_nested_items_to_be_public = false
 
   tags = var.tags

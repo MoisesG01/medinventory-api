@@ -5,8 +5,8 @@
 
 */
 -- AlterTable
-ALTER TABLE `user` ADD COLUMN `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+ALTER TABLE `User` ADD COLUMN `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     ADD COLUMN `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3);
 
 -- Update existing records to have updatedAt = createdAt
-UPDATE `user` SET `updatedAt` = `createdAt` WHERE `updatedAt` = `createdAt`;
+UPDATE `User` SET `updatedAt` = `createdAt` WHERE `updatedAt` = `createdAt`;

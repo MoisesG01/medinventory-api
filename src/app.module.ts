@@ -8,12 +8,14 @@ import { EquipamentosModule } from './equipamentos/equipamentos.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { StorageModule } from './storage/storage.module';
 import { CacheModule } from './cache/cache.module';
+import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     StorageModule,
     CacheModule,
+    MetricsModule,
     AuthModule,
     UserModule,
     EquipamentosModule,

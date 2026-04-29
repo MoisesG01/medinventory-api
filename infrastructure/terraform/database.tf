@@ -26,6 +26,15 @@ resource "azurerm_mysql_flexible_database" "main" {
   server_name         = azurerm_mysql_flexible_server.main.name
   charset             = "utf8mb3"
   collation           = "utf8mb3_unicode_ci"
+
+  # Provider upgrades can propose charset/collation replacements that would drop/recreate the DB.
+  # Avoid destructive churn; handle charset/collation changes via explicit migration/ops if needed.
+  lifecycle {
+    ignore_changes = [
+      charset,
+      collation,
+    ]
+  }
 }
 
 # Firewall rule to allow Azure services

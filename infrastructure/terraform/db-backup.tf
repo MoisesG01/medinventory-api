@@ -31,7 +31,7 @@ resource "azurerm_role_assignment" "db_backup_blob_contributor" {
 
 # Infra para Container Apps Job (logs e environment)
 resource "azurerm_log_analytics_workspace" "jobs" {
-  name                = "${var.project_name}-jobs-law-${var.environment}"
+  name = "${var.project_name}-jobs-law-${var.environment}"
   # Log Analytics Workspace location can't be changed in-place.
   # Keep it in the Resource Group's location to avoid replacement conflicts.
   location            = data.azurerm_resource_group.main.location
@@ -108,21 +108,32 @@ resource "azurerm_container_app_job" "mysql_dump" {
         name  = "STORAGE_CONTAINER"
         value = azurerm_storage_container.db_backups.name
       }
+      env {
+        name  = "AZURE_CLIENT_ID"
+        value = azurerm_user_assigned_identity.db_backup_job.client_id
+      }
 
       # Instala cliente mysql, faz dump com SSL e envia para o Blob usando Managed Identity
-      command = ["/bin/sh", "-lc"]
+      command = ["/bin/bash", "-lc"]
       args = [
         join(" && ", [
           "set -euo pipefail",
+          "set -x",
           "echo 'Installing mysql client...'",
-          "apt-get update -y",
-          "DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends mysql-client ca-certificates gzip",
+          "if command -v apt-get >/dev/null 2>&1; then apt-get update -y && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends default-mysql-client ca-certificates gzip; elif command -v tdnf >/dev/null 2>&1; then (tdnf -y install ca-certificates gzip mariadb-client || true) && (tdnf -y install ca-certificates gzip mariadb || true) && (tdnf -y install ca-certificates gzip mysql || true); elif command -v apk >/dev/null 2>&1; then apk add --no-cache mysql-client ca-certificates gzip; else echo 'No supported package manager found (apt-get/tdnf/apk)'; exit 1; fi",
+          "echo 'Dump binaries available:'",
+          "(command -v mysqldump && mysqldump --version) || true",
+          "(command -v mariadb-dump && mariadb-dump --version) || true",
+          "command -v mysqldump >/dev/null 2>&1 || command -v mariadb-dump >/dev/null 2>&1 || (echo 'mysqldump/mariadb-dump not found after install' && exit 1)",
           "ts=$(date -u +%Y-%m-%dT%H-%M-%SZ)",
           "file=/tmp/$${MYSQL_DATABASE}_$${ts}.sql.gz",
           "echo 'Running mysqldump...'",
-          "mysqldump --ssl-mode=REQUIRED -h \"$${MYSQL_HOST}\" -u \"$${MYSQL_USER}\" -p\"$${MYSQL_PASSWORD}\" \"$${MYSQL_DATABASE}\" | gzip > \"$file\"",
+          "DUMP_BIN=mysqldump; command -v mysqldump >/dev/null 2>&1 || DUMP_BIN=mariadb-dump",
+          "SSL_ARGS=(); if \"$${DUMP_BIN}\" --help 2>&1 | grep -q -- '--ssl-mode'; then SSL_ARGS+=(--ssl-mode=REQUIRED); else SSL_ARGS+=(--ssl); fi",
+          "\"$${DUMP_BIN}\" \"$${SSL_ARGS[@]}\" -h \"$${MYSQL_HOST}\" -u \"$${MYSQL_USER}\" -p\"$${MYSQL_PASSWORD}\" \"$${MYSQL_DATABASE}\" | gzip > \"$file\"",
           "echo 'Logging into Azure with managed identity...'",
-          "az login --identity --allow-no-subscriptions 1>/dev/null",
+          "az login --identity --client-id \"$${AZURE_CLIENT_ID}\" --allow-no-subscriptions 1>/dev/null",
+          "az --version",
           "blob_name=$${MYSQL_DATABASE}/$${ts}.sql.gz",
           "echo \"Uploading to blob: $${blob_name}\"",
           "az storage blob upload --auth-mode login --account-name \"$${STORAGE_ACCOUNT}\" --container-name \"$${STORAGE_CONTAINER}\" --name \"$${blob_name}\" --file \"$file\" --overwrite true",

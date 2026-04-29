@@ -1,0 +1,126 @@
+name: medinventory
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: medinventory-mysql
+    command: ["--default-authentication-plugin=mysql_native_password"]
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-medinventory_db}
+      MYSQL_USER: ${MYSQL_USER:-medinventory}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-medinventory}
+    ports:
+      - "${MYSQL_PORT:-3307}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - medinventory_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: medinventory-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks:
+      - medinventory_net
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:3.35.0
+    container_name: medinventory-azurite
+    command: ["azurite-blob", "--blobHost", "0.0.0.0", "--blobPort", "10000", "--location", "/data", "--debug", "/data/debug.log", "--skipApiVersionCheck"]
+    environment:
+      AZURITE_ACCOUNTS: "devstoreaccount1:Eby8vdM02xNoGFkFQxNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
+    ports:
+      - "${AZURITE_BLOB_PORT:-10000}:10000"
+    volumes:
+      - azurite_data:/data
+    networks:
+      - medinventory_net
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: medinventory-api
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      azurite:
+        condition: service_started
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: ${API_PORT_INTERNAL:-8080}
+      JWT_SECRET: ${JWT_SECRET:-local-dev-jwt-secret-change-me}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      DATABASE_URL: ${DATABASE_URL_LOCAL:-mysql://${MYSQL_USER:-medinventory}:${MYSQL_PASSWORD:-medinventory}@mysql:3306/${MYSQL_DATABASE:-medinventory_db}}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_TLS: "false"
+      # Azurite (Blob Storage emulator)
+      # Conta padrão: devstoreaccount1
+      # Chave padrão: (interna do Azurite)
+      AZURE_STORAGE_CONNECTION_STRING: ${AZURE_STORAGE_CONNECTION_STRING:-DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNoGFkFQxNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;}
+    ports:
+      - "${API_PORT:-8080}:${API_PORT_INTERNAL:-8080}"
+    networks:
+      - medinventory_net
+
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    container_name: medinventory-prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    networks:
+      - medinventory_net
+
+  grafana:
+    image: grafana/grafana:11.6.2
+    container_name: medinventory-grafana
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    networks:
+      - medinventory_net
+
+volumes:
+  mysql_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+  azurite_data:
+
+networks:
+  medinventory_net:
+    driver: bridge
+

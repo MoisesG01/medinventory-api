@@ -5,8 +5,8 @@
 
 */
 -- AlterTable
-ALTER TABLE `user` ADD COLUMN `nome` VARCHAR(191) NOT NULL DEFAULT 'Usuário',
+ALTER TABLE `User` ADD COLUMN `nome` VARCHAR(191) NOT NULL DEFAULT 'Usuário',
     ADD COLUMN `tipo` ENUM('Administrador', 'Gestor', 'Tecnico', 'UsuarioComum') NOT NULL DEFAULT 'UsuarioComum';
 
 -- Update existing records to have nome = username
-UPDATE `user` SET `nome` = `username` WHERE `nome` = 'Usuário';
+UPDATE `User` SET `nome` = `username` WHERE `nome` = 'Usuário';
