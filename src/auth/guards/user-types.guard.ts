@@ -65,7 +65,8 @@ export class UserTypesGuard implements CanActivate {
           type?: unknown;
         }
       | undefined;
-    const rawTipo = user?.tipo ?? user?.tipoUsuario ?? user?.userType ?? user?.type;
+    const rawTipo =
+      user?.tipo ?? user?.tipoUsuario ?? user?.userType ?? user?.type;
     const tipo = normalizeUserType(rawTipo);
     const allowedNormalized = allowed
       .map((t) => normalizeUserType(t))
@@ -78,4 +79,3 @@ export class UserTypesGuard implements CanActivate {
     return true;
   }
 }
-

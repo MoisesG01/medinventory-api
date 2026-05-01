@@ -141,7 +141,7 @@ describe('UserService', () => {
     it('should use default tipo if not provided', async () => {
       const createDtoWithoutTipo = { ...mockCreateUserDto };
       delete createDtoWithoutTipo.tipo;
-      
+
       const hashedPassword = 'hashedPassword123';
       (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
       prismaService.user.findUnique.mockResolvedValue(null);
@@ -253,7 +253,9 @@ describe('UserService', () => {
     it('should return user when found by id', async () => {
       prismaService.user.findUnique.mockResolvedValue(mockUser);
 
-      const result = await service.findById('123e4567-e89b-12d3-a456-426614174000');
+      const result = await service.findById(
+        '123e4567-e89b-12d3-a456-426614174000',
+      );
 
       expect(prismaService.user.findUnique).toHaveBeenCalledWith({
         where: { id: '123e4567-e89b-12d3-a456-426614174000' },
@@ -264,7 +266,9 @@ describe('UserService', () => {
     it('should return null when user not found by id', async () => {
       prismaService.user.findUnique.mockResolvedValue(null);
 
-      const result = await service.findById('999e4567-e89b-12d3-a456-426614174999');
+      const result = await service.findById(
+        '999e4567-e89b-12d3-a456-426614174999',
+      );
 
       expect(prismaService.user.findUnique).toHaveBeenCalledWith({
         where: { id: '999e4567-e89b-12d3-a456-426614174999' },
@@ -277,13 +281,18 @@ describe('UserService', () => {
         new Error('Database error'),
       );
 
-      await expect(service.findById('123e4567-e89b-12d3-a456-426614174000')).rejects.toThrow('Database error');
+      await expect(
+        service.findById('123e4567-e89b-12d3-a456-426614174000'),
+      ).rejects.toThrow('Database error');
     });
   });
 
   describe('findAll', () => {
     it('should return all users without password', async () => {
-      const users = [mockUser, { ...mockUser, id: '456e7890-e89b-12d3-a456-426614174001' }];
+      const users = [
+        mockUser,
+        { ...mockUser, id: '456e7890-e89b-12d3-a456-426614174001' },
+      ];
       prismaService.user.findMany.mockResolvedValue(users);
 
       const result = await service.findAll();
@@ -311,7 +320,9 @@ describe('UserService', () => {
     });
 
     it('should throw an error if database query fails', async () => {
-      prismaService.user.findMany.mockRejectedValue(new Error('Database error'));
+      prismaService.user.findMany.mockRejectedValue(
+        new Error('Database error'),
+      );
 
       await expect(service.findAll()).rejects.toThrow('Database error');
     });
@@ -340,7 +351,9 @@ describe('UserService', () => {
       mockCache.getJson.mockResolvedValue(null);
       prismaService.user.findUnique.mockResolvedValue(mockUser);
 
-      const result = await service.findOne('123e4567-e89b-12d3-a456-426614174000');
+      const result = await service.findOne(
+        '123e4567-e89b-12d3-a456-426614174000',
+      );
 
       expect(prismaService.user.findUnique).toHaveBeenCalledWith({
         where: { id: '123e4567-e89b-12d3-a456-426614174000' },
@@ -361,17 +374,19 @@ describe('UserService', () => {
     it('should throw NotFoundException when user not found', async () => {
       prismaService.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.findOne('999e4567-e89b-12d3-a456-426614174999')).rejects.toThrow(
-        'Usuário não encontrado',
-      );
+      await expect(
+        service.findOne('999e4567-e89b-12d3-a456-426614174999'),
+      ).rejects.toThrow('Usuário não encontrado');
     });
 
     it('should throw an error if database query fails', async () => {
-      prismaService.user.findUnique.mockRejectedValue(new Error('Database error'));
-
-      await expect(service.findOne('123e4567-e89b-12d3-a456-426614174000')).rejects.toThrow(
-        'Database error',
+      prismaService.user.findUnique.mockRejectedValue(
+        new Error('Database error'),
       );
+
+      await expect(
+        service.findOne('123e4567-e89b-12d3-a456-426614174000'),
+      ).rejects.toThrow('Database error');
     });
   });
 
@@ -387,7 +402,7 @@ describe('UserService', () => {
     it('should update user successfully', async () => {
       const hashedPassword = 'hashedNewPassword';
       const updatedUser = { ...mockUser, ...updateUserDto };
-      
+
       (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
       prismaService.user.findUnique
         .mockResolvedValueOnce(mockUser) // User exists
@@ -395,7 +410,10 @@ describe('UserService', () => {
         .mockResolvedValueOnce(null); // Email not taken
       prismaService.user.update.mockResolvedValue(updatedUser);
 
-      const result = await service.update('123e4567-e89b-12d3-a456-426614174000', updateUserDto);
+      const result = await service.update(
+        '123e4567-e89b-12d3-a456-426614174000',
+        updateUserDto,
+      );
 
       expect(prismaService.user.findUnique).toHaveBeenCalledTimes(3);
       expect(bcrypt.hash).toHaveBeenCalledWith(updateUserDto.password, 10);
@@ -424,9 +442,9 @@ describe('UserService', () => {
     it('should throw NotFoundException when user not found', async () => {
       prismaService.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.update('999e4567-e89b-12d3-a456-426614174999', updateUserDto)).rejects.toThrow(
-        'Usuário não encontrado',
-      );
+      await expect(
+        service.update('999e4567-e89b-12d3-a456-426614174999', updateUserDto),
+      ).rejects.toThrow('Usuário não encontrado');
     });
 
     it('should throw ConflictException when username already exists', async () => {
@@ -434,9 +452,9 @@ describe('UserService', () => {
         .mockResolvedValueOnce(mockUser) // User exists
         .mockResolvedValueOnce(mockUser); // Username already taken
 
-      await expect(service.update('123e4567-e89b-12d3-a456-426614174000', updateUserDto)).rejects.toThrow(
-        'Nome de usuário já está em uso',
-      );
+      await expect(
+        service.update('123e4567-e89b-12d3-a456-426614174000', updateUserDto),
+      ).rejects.toThrow('Nome de usuário já está em uso');
     });
 
     it('should throw ConflictException when email already exists', async () => {
@@ -445,29 +463,41 @@ describe('UserService', () => {
         .mockResolvedValueOnce(null) // Username not taken
         .mockResolvedValueOnce(mockUser); // Email already taken
 
-      await expect(service.update('123e4567-e89b-12d3-a456-426614174000', updateUserDto)).rejects.toThrow(
-        'Email já está em uso',
-      );
+      await expect(
+        service.update('123e4567-e89b-12d3-a456-426614174000', updateUserDto),
+      ).rejects.toThrow('Email já está em uso');
     });
 
     it('should not check username/email if they are not being changed', async () => {
       const updateDtoWithoutUsername = { nome: 'Updated User' };
-      
-      prismaService.user.findUnique.mockResolvedValueOnce(mockUser); // User exists
-      prismaService.user.update.mockResolvedValue({ ...mockUser, ...updateDtoWithoutUsername });
 
-      await service.update('123e4567-e89b-12d3-a456-426614174000', updateDtoWithoutUsername);
+      prismaService.user.findUnique.mockResolvedValueOnce(mockUser); // User exists
+      prismaService.user.update.mockResolvedValue({
+        ...mockUser,
+        ...updateDtoWithoutUsername,
+      });
+
+      await service.update(
+        '123e4567-e89b-12d3-a456-426614174000',
+        updateDtoWithoutUsername,
+      );
 
       expect(prismaService.user.findUnique).toHaveBeenCalledTimes(1); // Only check if user exists
     });
 
     it('should not hash password if not provided', async () => {
       const updateDtoWithoutPassword = { nome: 'Updated User' };
-      
-      prismaService.user.findUnique.mockResolvedValueOnce(mockUser);
-      prismaService.user.update.mockResolvedValue({ ...mockUser, ...updateDtoWithoutPassword });
 
-      await service.update('123e4567-e89b-12d3-a456-426614174000', updateDtoWithoutPassword);
+      prismaService.user.findUnique.mockResolvedValueOnce(mockUser);
+      prismaService.user.update.mockResolvedValue({
+        ...mockUser,
+        ...updateDtoWithoutPassword,
+      });
+
+      await service.update(
+        '123e4567-e89b-12d3-a456-426614174000',
+        updateDtoWithoutPassword,
+      );
 
       expect(bcrypt.hash).not.toHaveBeenCalled();
       expect(prismaService.user.update).toHaveBeenCalledWith({
@@ -491,7 +521,9 @@ describe('UserService', () => {
       prismaService.user.findUnique.mockResolvedValue(mockUser);
       prismaService.user.delete.mockResolvedValue(mockUser);
 
-      const result = await service.remove('123e4567-e89b-12d3-a456-426614174000');
+      const result = await service.remove(
+        '123e4567-e89b-12d3-a456-426614174000',
+      );
 
       expect(prismaService.user.findUnique).toHaveBeenCalledWith({
         where: { id: '123e4567-e89b-12d3-a456-426614174000' },
@@ -508,9 +540,9 @@ describe('UserService', () => {
     it('should throw NotFoundException when user not found', async () => {
       prismaService.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.remove('999e4567-e89b-12d3-a456-426614174999')).rejects.toThrow(
-        'Usuário não encontrado',
-      );
+      await expect(
+        service.remove('999e4567-e89b-12d3-a456-426614174999'),
+      ).rejects.toThrow('Usuário não encontrado');
       expect(prismaService.user.delete).not.toHaveBeenCalled();
     });
 
@@ -518,9 +550,9 @@ describe('UserService', () => {
       prismaService.user.findUnique.mockResolvedValue(mockUser);
       prismaService.user.delete.mockRejectedValue(new Error('Database error'));
 
-      await expect(service.remove('123e4567-e89b-12d3-a456-426614174000')).rejects.toThrow(
-        'Database error',
-      );
+      await expect(
+        service.remove('123e4567-e89b-12d3-a456-426614174000'),
+      ).rejects.toThrow('Database error');
     });
   });
 });
