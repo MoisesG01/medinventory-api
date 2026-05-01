@@ -306,6 +306,30 @@ describe('EquipamentosService', () => {
       });
     });
 
+    it('should correctly escape CSV fields and format dates', async () => {
+      const equipamentoComEspeciais = {
+        ...mockEquipamento,
+        nome: 'Nome com "aspas" e , vírgula',
+        dataAquisicao: null, // Testa o formatDateOnlyUtc com null
+        valorAquisicao: null, // Testa o escapeCsvField com null
+      };
+
+      mockPrismaService.equipamento.findMany.mockResolvedValue([
+        equipamentoComEspeciais,
+      ]);
+
+      await service.exportCsvToBlob();
+
+      const uploadBuffer = mockBlobCsvService.uploadCsvAndGetReadSas.mock
+        .calls[0][0] as Buffer;
+      const text = uploadBuffer.toString('utf-8');
+
+      // Verifica se as aspas foram duplicadas e o campo envolto em aspas
+      expect(text).toContain('"Nome com ""aspas"" e , vírgula"');
+      // Verifica se o valor nulo virou campo vazio no CSV
+      expect(text).toContain(',,');
+    });
+
     it('should upload CSV with BOM and header when there are no equipamentos', async () => {
       mockPrismaService.equipamento.findMany.mockResolvedValue([]);
 
@@ -450,6 +474,38 @@ describe('EquipamentosService', () => {
       nome: 'Monitor Atualizado',
       statusOperacional: StatusOperacional.EM_MANUTENCAO,
     };
+
+    it('should set dates and userId to null when provided as null in updateDto', async () => {
+      const updateDto: any = {
+        // Usamos any aqui para o TS não reclamar do null
+        dataAquisicao: null,
+        userId: null,
+      };
+
+      mockPrismaService.equipamento.findUnique.mockResolvedValue(
+        mockEquipamento,
+      );
+
+      // Simulamos o retorno do Prisma com os campos nulos
+      const updatedWithNull = {
+        ...mockEquipamento,
+        dataAquisicao: null,
+        userId: null,
+      };
+      mockPrismaService.equipamento.update.mockResolvedValue(updatedWithNull);
+
+      const result = await service.update(mockEquipamento.id, updateDto);
+
+      expect(mockPrismaService.equipamento.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            dataAquisicao: null,
+            userId: null,
+          }),
+        }),
+      );
+      expect(result.userId).toBeNull();
+    });
 
     it('should update equipamento successfully', async () => {
       const updatedEquipamento = {
@@ -662,6 +718,31 @@ describe('EquipamentosService', () => {
   });
 
   describe('findAll - additional filter tests', () => {
+    it('should build where clause with all filters', async () => {
+      const filters: FilterEquipamentoDto = {
+        nome: 'Raio-X',
+        tipo: 'Imagem',
+        setorAtual: 'Radiologia',
+        statusOperacional: StatusOperacional.EM_USO,
+      };
+
+      mockPrismaService.equipamento.findMany.mockResolvedValue([]);
+      mockPrismaService.equipamento.count.mockResolvedValue(0);
+
+      await service.findAll(filters);
+
+      expect(mockPrismaService.equipamento.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            nome: { contains: 'Raio-X' },
+            tipo: { contains: 'Imagem' },
+            setorAtual: { contains: 'Radiologia' },
+            statusOperacional: StatusOperacional.EM_USO,
+          },
+        }),
+      );
+    });
+
     it('should filter equipamentos by tipo', async () => {
       const filters: FilterEquipamentoDto = {
         tipo: 'Monitor de Sinais Vitais',

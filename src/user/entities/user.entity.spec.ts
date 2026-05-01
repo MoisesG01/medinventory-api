@@ -33,8 +33,8 @@ describe('User', () => {
 
   it('should handle different user types', () => {
     const types = ['Administrador', 'Gestor', 'Tecnico', 'UsuarioComum'];
-    
-    types.forEach(type => {
+
+    types.forEach((type) => {
       entity.tipo = type;
       expect(entity.tipo).toBe(type);
     });
